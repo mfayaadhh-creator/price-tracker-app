@@ -1,40 +1,63 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
-	"price_tracker/internal/scraper"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
+
+	"price_tracker/internal/handler"
+	"price_tracker/internal/repository"
+	"price_tracker/internal/scraper"
 )
 
 func main() {
-
+	// Logger & Env
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
-
 	_ = godotenv.Load()
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // fallback
+		port = "8080"
 	}
 
-	// 1. Initiate Scraper Uniqlo & TrackerManager
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		slog.Error("DATABASE_URL wajib diisi di file .env")
+		os.Exit(1)
+	}
+
+	// 1. Database
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	repo, err := repository.NewProductRepository(ctx, dbURL)
+	if err != nil {
+		slog.Error("Gagal terhubung ke Database Supabase", "error", err)
+		os.Exit(1)
+	}
+	defer repo.Close()
+	slog.Info("Berhasil terhubung ke Database Supabase")
+
+	// 2. Scraper & Handler
 	uniqloScraper := scraper.NewUniqloScraper()
 	trackManager := scraper.NewTrackerManager(uniqloScraper)
+	productHandler := handler.NewProductHandler(repo, trackManager)
 
+	// 3. Router
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	// Endpoint Healthcheck
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":    "OK",
 			"timestamp": time.Now(),
@@ -42,38 +65,17 @@ func main() {
 		})
 	})
 
-	// 2. Endpoint Scraping
-	r.Get("/test-scrape", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	r.Get("/test-scrape", productHandler.TestScrape)
 
-		// Ambil query param
-		targetURL := r.URL.Query().Get("url")
-		if targetURL == "" {
-			http.Error(w, `{"error": "parameter 'url' wajib diisi"}`, http.StatusBadRequest)
-			return
-		}
-
-		slog.Info("Mencoba melakukan scraping live", "url", targetURL)
-
-		// Panggil TrackerManager
-		productInfo, err := trackManager.FetchProduct(targetURL)
-		if err != nil {
-			slog.Error("Gagal mengambil harga produk", "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-
-		// Return data product dalam JSON
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(productInfo)
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/track", productHandler.AddTrack)
+		r.Get("/tracks", productHandler.ListTracks)
+		r.Delete("/tracks/{id}", productHandler.DeleteTrack)
 	})
 
-	slog.Info("Server Price Tracker siap berjalan",
-		"port", port,
-		"healthcheck", "http://localhost:"+port+"/healthz")
-
+	// 4. Server Start
 	addr := ":" + port
+	slog.Info("Server Price Tracker siap berjalan", "port", port, "healthcheck", "http://localhost:"+port+"/healthz")
 	if err := http.ListenAndServe(addr, r); err != nil {
 		slog.Error("Gagal menjalankan server", "error", err)
 		os.Exit(1)

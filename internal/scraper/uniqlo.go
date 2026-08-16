@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,7 +18,7 @@ type UniqloScraper struct {
 func NewUniqloScraper() *UniqloScraper {
 	return &UniqloScraper{
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 15 * time.Second,
 		},
 	}
 }
@@ -27,12 +28,64 @@ func (s *UniqloScraper) CanHandle(rawURL string) bool {
 }
 
 func (s *UniqloScraper) ExtractProductID(rawURL string) (string, error) {
-	re := regexp.MustCompile(`products/[A-Za-z]*([0-9]{6})`)
+	re := regexp.MustCompile(`products/([A-Za-z]?[0-9]{6}-[0-9]{3})`)
 	matches := re.FindStringSubmatch(rawURL)
 	if len(matches) >= 2 {
 		return matches[1], nil
 	}
 	return "", fmt.Errorf("gagal menemukan product ID dari URL Uniqlo")
+}
+
+// Struct untuk membaca data harga dari __PRELOADED_STATE__
+type uqPriceDetail struct {
+	Currency struct {
+		Code   string `json:"code"`
+		Symbol string `json:"symbol"`
+	} `json:"currency"`
+	Value float64 `json:"value"`
+}
+
+type uqPrices struct {
+	Base  uqPriceDetail `json:"base"`
+	Promo uqPriceDetail `json:"promo"`
+}
+
+type uqProduct struct {
+	Name      string   `json:"name"`
+	ProductID string   `json:"productId"`
+	Prices    uqPrices `json:"prices"`
+}
+
+type uqProductWrapper struct {
+	Product uqProduct `json:"product"`
+}
+
+// extractPreloadedState mengekstrak blok JSON __PRELOADED_STATE__ dari HTML Uniqlo
+func extractPreloadedState(htmlContent string) ([]byte, error) {
+	marker := "window.__PRELOADED_STATE__"
+	startIdx := strings.Index(htmlContent, marker)
+	if startIdx == -1 {
+		return nil, fmt.Errorf("__PRELOADED_STATE__ tidak ditemukan di HTML")
+	}
+
+	afterMarker := htmlContent[startIdx+len(marker):]
+	eqIdx := strings.Index(afterMarker, "=")
+	if eqIdx == -1 {
+		return nil, fmt.Errorf("karakter '=' tidak ditemukan setelah __PRELOADED_STATE__")
+	}
+
+	jsonStart := startIdx + len(marker) + eqIdx + 1
+	remaining := htmlContent[jsonStart:]
+
+	scriptEnd := strings.Index(remaining, "</script>")
+	if scriptEnd == -1 {
+		return nil, fmt.Errorf("tag </script> tidak ditemukan setelah __PRELOADED_STATE__")
+	}
+
+	jsonStr := strings.TrimSpace(remaining[:scriptEnd])
+	jsonStr = strings.TrimRight(jsonStr, "; \n\r\t")
+
+	return []byte(jsonStr), nil
 }
 
 func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
@@ -67,40 +120,45 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 
 	htmlContent := string(bodyBytes)
 
-	// 1. Ekstrak nama produk yang valid dari JSON-state
-	name := ""
-	reName := regexp.MustCompile(`"name"\s*:\s*"([^"]+)"`)
-	matchesName := reName.FindAllStringSubmatch(htmlContent, 30)
-	ignoredNames := map[string]bool{
-		"UNIQLO APP": true, "StyleHint APP": true, "tops": true, "t-shirts": true,
-		"crew neck": true, "WHITE": true, "BLACK": true, "Uniseks": true,
+	// 1. Ekstrak blok JSON __PRELOADED_STATE__ secara utuh
+	stateJSON, err := extractPreloadedState(htmlContent)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mengekstrak state JSON: %w", err)
 	}
-	for _, m := range matchesName {
-		if len(m) >= 2 {
-			candidate := strings.TrimSpace(m[1])
-			if !ignoredNames[candidate] && !strings.Contains(candidate, "http") && len(candidate) > 3 {
-				name = candidate
-				break
-			}
+
+	// 2. Parse top-level state
+	var state map[string]json.RawMessage
+	if err := json.Unmarshal(stateJSON, &state); err != nil {
+		return nil, fmt.Errorf("gagal parse __PRELOADED_STATE__: %w", err)
+	}
+
+	// 3. Navigasi ke entity → pdpEntity
+	var entity map[string]json.RawMessage
+	if err := json.Unmarshal(state["entity"], &entity); err != nil {
+		return nil, fmt.Errorf("gagal parse entity: %w", err)
+	}
+
+	var pdpEntity map[string]json.RawMessage
+	if err := json.Unmarshal(entity["pdpEntity"], &pdpEntity); err != nil {
+		return nil, fmt.Errorf("gagal parse pdpEntity: %w", err)
+	}
+
+	// 4. Ambil entry produk pertama dari pdpEntity
+	var productData uqProductWrapper
+	for _, rawProduct := range pdpEntity {
+		if err := json.Unmarshal(rawProduct, &productData); err == nil && productData.Product.Name != "" {
+			break
 		}
 	}
 
-	// 2. Ekstrak Base Price & Promo Price
-	var basePrice, currentPrice float64
-
-	// Pattern Base Price
-	reBasePrice := regexp.MustCompile(`"base"\s*:\s*\{"currency"[^}]+\},\s*"value"\s*:\s*([0-9]+)`)
-	if m := reBasePrice.FindStringSubmatch(htmlContent); len(m) >= 2 {
-		fmt.Sscanf(m[1], "%f", &basePrice)
+	if productData.Product.Name == "" {
+		return nil, fmt.Errorf("data produk tidak ditemukan di pdpEntity")
 	}
 
-	// Pattern Promo Price (jika diskon)
-	rePromoPrice := regexp.MustCompile(`"promo"\s*:\s*\{"currency"[^}]+\},\s*"value"\s*:\s*([0-9]+)`)
-	if m := rePromoPrice.FindStringSubmatch(htmlContent); len(m) >= 2 {
-		fmt.Sscanf(m[1], "%f", &currentPrice)
-	}
+	prod := productData.Product
+	basePrice := prod.Prices.Base.Value
+	currentPrice := prod.Prices.Promo.Value
 
-	// Jika tidak sedang promo, currentPrice = basePrice
 	if currentPrice == 0 {
 		currentPrice = basePrice
 	}
@@ -113,7 +171,7 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 	return &domain.ProductInfo{
 		Platform:     "Uniqlo",
 		ProductID:    productID,
-		Name:         name,
+		Name:         prod.Name,
 		BasePrice:    basePrice,
 		CurrentPrice: currentPrice,
 		IsDiscount:   isDiscount,
@@ -121,3 +179,4 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 		CheckedAt:    time.Now(),
 	}, nil
 }
+
