@@ -26,3 +26,6 @@ price_tracker
 # System / OS Files
 .DS_Store
 Thumbs.db
+
+*.md
+!README.md
