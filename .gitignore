@@ -1,0 +1,28 @@
+# Data Sensitif & Environment Variables
+.env
+.env.local
+*.env
+
+# Windows Metadata & Zone Identifier
+*:Zone.Identifier
+
+# Compiled Binary & Executables
+*.exe
+*.exe?
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+price_tracker
+
+# IDE & Editor Settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# System / OS Files
+.DS_Store
+Thumbs.db
