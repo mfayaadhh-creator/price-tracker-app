@@ -53,3 +53,16 @@ func TestUniversalScraper_Tokopedia(t *testing.T) {
 	}
 	t.Logf("Tokopedia SUCCESS: [%s] %s - Rp %.0f", info.Platform, info.Name, info.CurrentPrice)
 }
+
+func TestUniversalScraper_Agres(t *testing.T) {
+	s := NewUniversalScraper()
+	url := "https://www.agres.id/products/lenovo-ideapad-slim-3-14-core-5-320-8gb-512gb-w11ohsm365b-140wuxga-blit-2y-prem2adp-box-bp-blue-8yid"
+	info, err := s.FetchPrice(url)
+	if err != nil {
+		t.Fatalf("Agres fetch error: %v", err)
+	}
+	if info.CurrentPrice == 0 {
+		t.Errorf("Expected price > 0, got %.0f", info.CurrentPrice)
+	}
+	t.Logf("Agres.id SUCCESS: [%s] %s - Rp %.0f (Img: %s)", info.Platform, info.Name, info.CurrentPrice, info.ImageURL)
+}

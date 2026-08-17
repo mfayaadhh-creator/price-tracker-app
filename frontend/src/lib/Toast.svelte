@@ -13,8 +13,10 @@
             <Icon name="check" size={15} color="#065F46" strokeWidth={2.5} />
           {:else if t.type === 'error'}
             <Icon name="warning" size={15} color="#991B1B" strokeWidth={2.5} />
+          {:else if t.message && (t.message.toLowerCase().includes('hapus') || t.message.toLowerCase().includes('delete') || t.message.toLowerCase().includes('keluar'))}
+            <Icon name="trash" size={15} color="#854D0E" strokeWidth={2.2} />
           {:else}
-            <Icon name="bolt" size={15} color="#854D0E" strokeWidth={2.5} />
+            <Icon name="tag" size={15} color="#854D0E" strokeWidth={2.2} />
           {/if}
         </span>
         <span class="toast-text">{t.message}</span>

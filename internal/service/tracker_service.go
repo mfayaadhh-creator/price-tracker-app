@@ -128,6 +128,11 @@ func (s *TrackerService) EvaluateAllProducts(ctx context.Context) (*EvaluationRe
 						hemat = latestInfo.BasePrice - newPrice
 					}
 
+					platformName := prod.Platform
+					if platformName == "" {
+						platformName = "Website Toko"
+					}
+
 					var msg string
 					if isTargetHit {
 						// 🎯 Format Khusus: Target Budget Tercapai!
@@ -135,11 +140,12 @@ func (s *TrackerService) EvaluateAllProducts(ctx context.Context) (*EvaluationRe
 							"🎯 <b>TARGET HARGA TERCAPAI!</b>\n\n"+
 								"Kabar gembira! Produk incaran Anda sudah menyentuh target budget!\n\n"+
 								"📦 <b>Produk:</b> %s\n"+
+								"🏷️ <b>Platform:</b> %s\n"+
 								"🎯 <b>Target Budget:</b> Rp %.0f\n"+
 								"🔥 <b>Harga Sekarang:</b> <b>Rp %.0f</b>\n"+
 								"💰 <b>Total Hemat:</b> Rp %.0f\n\n"+
-								"🛒 <a href=\"%s\">Beli Sekarang di Uniqlo</a>",
-							prod.Name, prod.TargetPrice, newPrice, hemat, prod.URL,
+								"🛍️ <a href=\"%s\">Beli Sekarang di %s</a>",
+							prod.Name, platformName, prod.TargetPrice, newPrice, hemat, prod.URL, platformName,
 						)
 					} else {
 						// 📉 Format: Penurunan Harga Biasa
@@ -151,11 +157,12 @@ func (s *TrackerService) EvaluateAllProducts(ctx context.Context) (*EvaluationRe
 						msg = fmt.Sprintf(
 							"🔔 <b>PENURUNAN HARGA TERDETEKSI!</b>\n\n"+
 								"📦 <b>Produk:</b> %s\n"+
+								"🏷️ <b>Platform:</b> %s\n"+
 								"🏷️ <b>Harga Sebelumnya:</b> <s>Rp %.0f</s>\n"+
 								"🔥 <b>Harga Sekarang:</b> <b>Rp %.0f</b>\n"+
 								"💰 <b>Hemat:</b> Rp %.0f%s\n\n"+
-								"🛒 <a href=\"%s\">Klik di Sini untuk Beli di Uniqlo</a>",
-							prod.Name, oldPrice, newPrice, hemat, targetInfo, prod.URL,
+								"🛍️ <a href=\"%s\">Klik di Sini untuk Beli di %s</a>",
+							prod.Name, platformName, oldPrice, newPrice, hemat, targetInfo, prod.URL, platformName,
 						)
 					}
 
