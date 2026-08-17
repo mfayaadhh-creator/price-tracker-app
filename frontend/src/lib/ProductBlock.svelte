@@ -228,7 +228,7 @@
       rel="noopener noreferrer"
       class="pixel-btn visit-btn font-mono"
     >
-      <span>BUKA WEB UNIQLO</span>
+      <span>BUKA WEB {product.platform || "TOKO"}</span>
       <span>↗</span>
     </a>
   </div>

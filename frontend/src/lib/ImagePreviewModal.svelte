@@ -46,7 +46,7 @@
       <!-- Header -->
       <div class="lightbox-header">
         <div class="header-left font-mono">
-          <span class="platform-tag font-pixel">{data.platform || "UNIQLO"}</span>
+          <span class="platform-tag font-pixel">{data.platform || "E-COMMERCE"}</span>
           <span class="header-id font-mono">PHOTO_PREVIEW // HD</span>
         </div>
         <button type="button" class="close-btn font-mono" on:click={onClose} title="Tutup (Esc)">

@@ -19,7 +19,7 @@
         <span class="version-tag">v1.0</span>
       </div>
       <p class="brand-subtitle font-mono">
-        // MONITOR DISKON UNIQLO & AUTOMATED TELEGRAM ALERT ENGINE
+        // MULTI-STORE PRICE TRACKER & REAL-TIME TELEGRAM ALERT ENGINE
       </p>
     </div>
 

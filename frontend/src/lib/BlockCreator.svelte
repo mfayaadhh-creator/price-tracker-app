@@ -23,7 +23,7 @@
     formError = "";
     
     if (!url.trim()) {
-      formError = "URL Produk Uniqlo wajib diisi!";
+      formError = "URL produk wajib diisi!";
       return;
     }
 
@@ -57,7 +57,7 @@
       <span>[+]</span> TAMBAH BLOCK BARU
     </div>
     <span class="header-desc font-mono">
-      Tempel link toko apa saja (Uniqlo, H&M, Zalora, dll) → Auto scraping & pantau 24/7
+      Tempel link toko apa saja (Uniqlo, Zara, Zalora, H&M, dll) → Auto scraping & pantau 24/7
     </span>
   </div>
 
@@ -66,14 +66,14 @@
     <div class="input-group">
       <label for="product-url" class="input-label font-mono">
         <span class="label-badge font-pixel">URL</span>
-        LINK PRODUK E-COMMERCE (UNIQLO, H&M, ZALORA, DLL):
+        LINK PRODUK E-COMMERCE (UNIQLO, ZARA, ZALORA, H&M, DLL):
       </label>
       <div class="input-wrapper">
         <input 
           id="product-url"
           type="url" 
           bind:value={url} 
-          placeholder="https://www.uniqlo.com/... atau https://id.hm.com/... atau https://www.zalora.co.id/..."
+          placeholder="https://www.uniqlo.com/... atau https://www.zara.com/... atau https://www.zalora.co.id/..."
           class="pixel-input"
           disabled={isSubmitting}
           required
@@ -82,7 +82,7 @@
           type="button" 
           on:click={setSample} 
           class="sample-btn font-mono"
-          title="Isi dengan contoh link produk Uniqlo"
+          title="Isi dengan contoh link produk"
         >
           [SAMPLE]
         </button>
@@ -148,7 +148,7 @@
       >
         {#if isSubmitting}
           <span class="spinner-pixel"></span>
-          <span>SEDANG MENGAMBIL DATA HARGA UNIQLO...</span>
+          <span>SEDANG MENGAMBIL DATA HARGA LIVE...</span>
         {:else}
           <span>⚡</span>
           <span>MULAI PANTAU HARGA PRODUK INI</span>

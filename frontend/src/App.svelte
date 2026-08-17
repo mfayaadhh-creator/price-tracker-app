@@ -222,7 +222,7 @@
           PANTAU DISKON FASHION DENGAN <span class="highlight-text">MODULAR BLOCKS</span>
         </h1>
         <p class="hero-desc font-mono">
-          Tambahkan link Uniqlo Anda di bawah. Setiap kali sistem mendeteksi penurunan harga atau diskon baru, bot Telegram kami akan langsung mengirimkan pesan ke HP Anda!
+          Tambahkan link produk dari toko favorit Anda (Uniqlo, Zara, Zalora, H&M, dll). Setiap kali sistem mendeteksi penurunan harga atau diskon baru, bot Telegram kami akan langsung mengirimkan pesan ke HP Anda!
         </p>
 
         <!-- Quick 3-Step Guide -->
@@ -233,7 +233,7 @@
           </div>
           <div class="step-card">
             <span class="step-num font-pixel">02</span>
-            <span class="step-text">Input Link Produk Uniqlo Favorit Anda</span>
+            <span class="step-text">Input Link Produk Toko Favorit Anda</span>
           </div>
           <div class="step-card">
             <span class="step-num font-pixel">03</span>
@@ -290,7 +290,7 @@
           <div class="empty-pixel-icon font-pixel">[ ? ]</div>
           <h3 class="empty-title font-display">Belum Ada Block Produk yang Dipantau</h3>
           <p class="empty-desc font-mono">
-            Salin link produk dari website <strong>uniqlo.com</strong> dan masukkan pada form di atas untuk memulai pemantauan harga otomatis!
+            Salin link produk dari website toko favorit Anda (Uniqlo, Zara, Zalora, H&M, dll) dan masukkan pada form di atas untuk memulai pemantauan harga otomatis!
           </p>
         </div>
 

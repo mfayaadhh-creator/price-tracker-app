@@ -42,3 +42,14 @@ func TestUniversalScraper_Zara(t *testing.T) {
 	}
 	t.Logf("Zara SUCCESS: %s - Rp %.0f", info.Name, info.CurrentPrice)
 }
+
+func TestUniversalScraper_Tokopedia(t *testing.T) {
+	s := NewUniversalScraper()
+	url := "https://www.tokopedia.com/aerostreet/aerostreet-massive-low-abu-muda-sepatu-sneakers-pria-wanita"
+	info, err := s.FetchPrice(url)
+	if err != nil {
+		t.Logf("Tokopedia notice: %v", err)
+		return
+	}
+	t.Logf("Tokopedia SUCCESS: [%s] %s - Rp %.0f", info.Platform, info.Name, info.CurrentPrice)
+}
