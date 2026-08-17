@@ -124,6 +124,10 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+		return nil, fmt.Errorf("PRODUK_UNAVAILABLE: halaman produk Uniqlo tidak ditemukan (status %d)", resp.StatusCode)
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("halaman Uniqlo mengembalikan status %d", resp.StatusCode)
 	}
@@ -138,7 +142,7 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 	// 1. Ekstrak blok JSON __PRELOADED_STATE__ secara utuh
 	stateJSON, err := extractPreloadedState(htmlContent)
 	if err != nil {
-		return nil, fmt.Errorf("gagal mengekstrak state JSON: %w", err)
+		return nil, fmt.Errorf("PRODUK_UNAVAILABLE: gagal mengekstrak state JSON (produk mungkin sudah dihapus): %w", err)
 	}
 
 	// 2. Parse top-level state
@@ -167,7 +171,7 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 	}
 
 	if productData.Product.Name == "" {
-		return nil, fmt.Errorf("data produk tidak ditemukan di pdpEntity")
+		return nil, fmt.Errorf("PRODUK_UNAVAILABLE: data produk tidak ditemukan di pdpEntity")
 	}
 
 	prod := productData.Product
@@ -213,6 +217,7 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 		BasePrice:    basePrice,
 		CurrentPrice: currentPrice,
 		IsDiscount:   isDiscount,
+		IsAvailable:  true,
 		URL:          rawURL,
 		CheckedAt:    time.Now(),
 	}, nil

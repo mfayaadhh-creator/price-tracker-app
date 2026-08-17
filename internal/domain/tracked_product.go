@@ -14,6 +14,7 @@ type TrackedProduct struct {
 	LastPrice   float64   `json:"last_price"`
 	TargetPrice float64   `json:"target_price"`
 	IsDiscount  bool      `json:"is_discount"`
+	Status      string    `json:"status"` // "active" | "unavailable"
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

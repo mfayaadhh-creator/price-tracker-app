@@ -71,12 +71,34 @@ func (s *TrackerService) EvaluateAllProducts(ctx context.Context) (*EvaluationRe
 			latestInfo, err := s.trackManager.FetchProduct(prod.URL)
 			if err != nil {
 				errMsg := fmt.Sprintf("Gagal cek produk ID %s (%s): %v", prod.ID, prod.Name, err)
-				slog.Error(errMsg)
+				slog.Warn(errMsg)
 
 				mu.Lock()
 				result.Errors = append(result.Errors, errMsg)
 				mu.Unlock()
+
+				// Jika produk sebelumnya aktif dan sekarang tidak tersedia (404/habis), update status ke unavailable
+				if prod.Status != "unavailable" {
+					_ = s.repo.UpdateProductStatus(ctx, prod.ID, "unavailable")
+					slog.Info("Status produk diubah menjadi unavailable di DB", "id", prod.ID, "name", prod.Name)
+
+					if s.notifier != nil {
+						msg := fmt.Sprintf(
+							"⚠️ <b>INFO: PRODUK TIDAK TERSEDIA / HABIS</b>\n\n"+
+								"Produk incaran Anda: <b>%s</b> tampaknya sudah tidak tersedia atau dihapus dari katalog Uniqlo.\n\n"+
+								"🛒 <a href=\"%s\">Cek Link Produk</a>",
+							prod.Name, prod.URL,
+						)
+						_ = s.notifier.SendAlert(prod.UserPhone, msg)
+					}
+				}
 				return
+			}
+
+			// Jika produk sebelumnya unavailable tapi sekarang kembali aktif, pulihkan status ke active
+			if prod.Status == "unavailable" {
+				_ = s.repo.UpdateProductStatus(ctx, prod.ID, "active")
+				slog.Info("Produk kembali tersedia, status dipulihkan ke active", "id", prod.ID, "name", prod.Name)
 			}
 
 			oldPrice := prod.LastPrice

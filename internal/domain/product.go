@@ -10,6 +10,7 @@ type ProductInfo struct {
 	BasePrice    float64   `json:"base_price"`
 	CurrentPrice float64   `json:"current_price"`
 	IsDiscount   bool      `json:"is_discount"`
+	IsAvailable  bool      `json:"is_available"`
 	URL          string    `json:"url"`
 	CheckedAt    time.Time `json:"checked_at"`
 }

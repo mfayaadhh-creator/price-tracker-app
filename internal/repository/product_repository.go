@@ -21,8 +21,9 @@ func NewProductRepository(ctx context.Context, connString string) (*ProductRepos
 		return nil, err
 	}
 
-	// Auto-migration: pastikan kolom image_url ada
+	// Auto-migration: pastikan kolom image_url & status ada
 	_, _ = pool.Exec(ctx, "ALTER TABLE tracked_products ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';")
+	_, _ = pool.Exec(ctx, "ALTER TABLE tracked_products ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'active';")
 
 	return &ProductRepository{pool: pool}, nil
 }
@@ -32,19 +33,23 @@ func (r *ProductRepository) Close() {
 }
 
 func (r *ProductRepository) AddTrackedProduct(ctx context.Context, tp domain.TrackedProduct) (string, error) {
-	query := `INSERT INTO tracked_products (user_phone, url, platform, product_id, name, image_url, base_price, last_price, target_price, is_discount)
-                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	if tp.Status == "" {
+		tp.Status = "active"
+	}
+
+	query := `INSERT INTO tracked_products (user_phone, url, platform, product_id, name, image_url, base_price, last_price, target_price, is_discount, status)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                   RETURNING id`
 	var id string
 	err := r.pool.QueryRow(ctx, query, tp.UserPhone, tp.URL, tp.Platform, tp.ProductID,
-		tp.Name, tp.ImageURL, tp.BasePrice, tp.LastPrice, tp.TargetPrice, tp.IsDiscount,
+		tp.Name, tp.ImageURL, tp.BasePrice, tp.LastPrice, tp.TargetPrice, tp.IsDiscount, tp.Status,
 	).Scan(&id)
 	return id, err
 }
 
 func (r *ProductRepository) GetAllTrackedProducts(ctx context.Context) ([]domain.TrackedProduct, error) {
 	query := `SELECT id, user_phone, url, platform, product_id, name,
-  COALESCE(image_url, ''), base_price, last_price, target_price, is_discount, created_at,
+  COALESCE(image_url, ''), base_price, last_price, target_price, is_discount, COALESCE(status, 'active'), created_at,
   updated_at
                   FROM tracked_products ORDER BY created_at DESC`
 	rows, err := r.pool.Query(ctx, query)
@@ -58,7 +63,7 @@ func (r *ProductRepository) GetAllTrackedProducts(ctx context.Context) ([]domain
 		var tp domain.TrackedProduct
 		err := rows.Scan(&tp.ID, &tp.UserPhone, &tp.URL, &tp.Platform,
 			&tp.ProductID, &tp.Name, &tp.ImageURL, &tp.BasePrice, &tp.LastPrice,
-			&tp.TargetPrice, &tp.IsDiscount, &tp.CreatedAt, &tp.UpdatedAt)
+			&tp.TargetPrice, &tp.IsDiscount, &tp.Status, &tp.CreatedAt, &tp.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +74,7 @@ func (r *ProductRepository) GetAllTrackedProducts(ctx context.Context) ([]domain
 
 func (r *ProductRepository) GetTrackedProductsByUser(ctx context.Context, userPhone string) ([]domain.TrackedProduct, error) {
 	query := `SELECT id, user_phone, url, platform, product_id, name,
-  COALESCE(image_url, ''), base_price, last_price, target_price, is_discount, created_at,
+  COALESCE(image_url, ''), base_price, last_price, target_price, is_discount, COALESCE(status, 'active'), created_at,
   updated_at
                   FROM tracked_products WHERE user_phone = $1 ORDER BY created_at DESC`
 	rows, err := r.pool.Query(ctx, query, userPhone)
@@ -83,7 +88,7 @@ func (r *ProductRepository) GetTrackedProductsByUser(ctx context.Context, userPh
 		var tp domain.TrackedProduct
 		err := rows.Scan(&tp.ID, &tp.UserPhone, &tp.URL, &tp.Platform,
 			&tp.ProductID, &tp.Name, &tp.ImageURL, &tp.BasePrice, &tp.LastPrice,
-			&tp.TargetPrice, &tp.IsDiscount, &tp.CreatedAt, &tp.UpdatedAt)
+			&tp.TargetPrice, &tp.IsDiscount, &tp.Status, &tp.CreatedAt, &tp.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -91,9 +96,16 @@ func (r *ProductRepository) GetTrackedProductsByUser(ctx context.Context, userPh
 	}
 	return products, nil
 }
+
 func (r *ProductRepository) UpdateLastPrice(ctx context.Context, id string, lastPrice float64, isDiscount bool) error {
-	query := `UPDATE tracked_products SET last_price = $1, is_discount = $2, updated_at = NOW() WHERE id = $3`
+	query := `UPDATE tracked_products SET last_price = $1, is_discount = $2, status = 'active', updated_at = NOW() WHERE id = $3`
 	_, err := r.pool.Exec(ctx, query, lastPrice, isDiscount, id)
+	return err
+}
+
+func (r *ProductRepository) UpdateProductStatus(ctx context.Context, id string, status string) error {
+	query := `UPDATE tracked_products SET status = $1, updated_at = NOW() WHERE id = $2`
+	_, err := r.pool.Exec(ctx, query, status, id)
 	return err
 }
 

@@ -13,6 +13,7 @@
   let isDeleting = false;
   let isDragging = false;
   let isDragOver = false;
+  let imageError = false;
 
   function formatIDR(amount) {
     if (!amount && amount !== 0) return "Rp 0";
@@ -65,10 +66,11 @@
 
   $: savings = calculateSavings(product.base_price, product.last_price);
   $: hasDiscount = product.is_discount || (product.base_price > product.last_price);
+  $: isUnavailable = product.status === "unavailable";
 </script>
 
 <article 
-  class="product-block pixel-box {isDragging ? 'is-dragging' : ''} {isDragOver ? 'is-drag-over' : ''}"
+  class="product-block pixel-box {isDragging ? 'is-dragging' : ''} {isDragOver ? 'is-drag-over' : ''} {isUnavailable ? 'is-unavailable' : ''}"
   aria-label={product.name}
   draggable="true"
   on:dragstart={handleInternalDragStart}
@@ -128,7 +130,7 @@
   <div class="block-body">
     <!-- Product Showcase: Image & Meta Info -->
     <div class="product-showcase">
-      {#if product.image_url}
+      {#if product.image_url && !imageError}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div 
@@ -143,11 +145,12 @@
             alt={product.name} 
             loading="lazy" 
             class="product-image"
+            on:error={() => imageError = true}
           />
           <span class="zoom-badge font-mono">🔍 HD</span>
         </div>
       {:else}
-        <div class="image-placeholder font-pixel">
+        <div class="image-placeholder font-pixel" title="Foto produk default">
           <span>👕</span>
         </div>
       {/if}
@@ -160,6 +163,11 @@
 
         <!-- Product Metadata Badges -->
         <div class="meta-badges">
+          {#if isUnavailable}
+            <span class="pixel-tag pixel-tag-danger font-mono">
+              ⚠️ TIDAK TERSEDIA (404)
+            </span>
+          {/if}
           <span class="pixel-tag pixel-tag-orange font-mono">
             ID: {product.product_id || "N/A"}
           </span>
@@ -195,8 +203,12 @@
         {/if}
       </div>
 
-      <!-- Discount Banner -->
-      {#if hasDiscount}
+      <!-- Status / Discount Banner -->
+      {#if isUnavailable}
+        <div class="unavailable-banner font-mono font-pixel">
+          <span>⚠️ PRODUK HABIS / HALAMAN TIDAK TERSEDIA</span>
+        </div>
+      {:else if hasDiscount}
         <div class="savings-banner font-mono font-pixel">
           <span>🔥 HEMAT: {formatIDR(savings)}</span>
         </div>
@@ -473,6 +485,23 @@
     text-decoration: line-through;
     color: #71717A;
     font-weight: 600;
+  }
+
+  .product-block.is-unavailable {
+    opacity: 0.82;
+    filter: grayscale(15%);
+    border-color: #B91C1C !important;
+  }
+
+  .unavailable-banner {
+    background-color: #FEE2E2;
+    border: 1.5px solid #DC2626;
+    color: #991B1B;
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-align: center;
+    box-shadow: 1px 1px 0px #DC2626;
   }
 
   .savings-banner {
