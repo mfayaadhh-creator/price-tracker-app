@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -179,11 +180,17 @@ func (h *ProductHandler) TestScrape(w http.ResponseWriter, r *http.Request) {
 func (h *ProductHandler) CronEvaluate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// Validasi Secret Token opsional jika diset di env
+	// Validasi Secret Token opsional jika diset di env dengan Constant-Time Compare (Anti-Timing Attack)
 	cronSecret := os.Getenv("CRON_SECRET")
 	if cronSecret != "" {
 		authHeader := r.Header.Get("Authorization")
-		if authHeader != "Bearer "+cronSecret && r.URL.Query().Get("key") != cronSecret {
+		expectedBearer := "Bearer " + cronSecret
+		queryKey := r.URL.Query().Get("key")
+
+		validBearer := subtle.ConstantTimeCompare([]byte(authHeader), []byte(expectedBearer)) == 1
+		validQuery := subtle.ConstantTimeCompare([]byte(queryKey), []byte(cronSecret)) == 1
+
+		if !validBearer && !validQuery {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized cron trigger"})
 			return
