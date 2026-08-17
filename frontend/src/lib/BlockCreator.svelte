@@ -152,7 +152,7 @@
           <span class="spinner-pixel"></span>
           <span>SEDANG MENGAMBIL DATA HARGA LIVE...</span>
         {:else}
-          <Icon name="bolt" size={15} color="#FFFFFF" />
+          <Icon name="tag" size={15} color="#FFFFFF" />
           <span>MULAI PANTAU HARGA PRODUK INI</span>
         {/if}
       </button>

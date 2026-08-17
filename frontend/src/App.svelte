@@ -235,8 +235,8 @@
     <section class="hero-banner pixel-box">
       <div class="hero-content">
         <div class="hero-badge font-pixel">
-          <Icon name="bolt" size={13} color="#FF5722" strokeWidth={2.5} />
-          <span>MULTI-STORE PRICE ENGINE v2.0</span>
+          <Icon name="tag" size={13} color="#FF5722" strokeWidth={2.2} />
+          <span>MULTI-STORE PRICE TRACKER v2.0</span>
         </div>
         <h1 class="hero-title font-display">
           PANTAU DISKON FASHION DENGAN <span class="highlight-text">MODULAR BLOCKS</span>
