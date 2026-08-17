@@ -108,9 +108,16 @@
           disabled={isSubmitting}
           required
         />
-        <small class="helper-text font-mono">
-          Dapatkan Chat ID via bot <code>@userinfobot</code>
-        </small>
+        {#if currentUser && currentUser.user_phone}
+          <small class="helper-text helper-connected font-mono">
+            <Icon name="check" size={12} color="#065F46" />
+            <span>Terhubung otomatis: <strong>{currentUser.first_name || 'Akun Telegram'}</strong> ({currentUser.user_phone})</span>
+          </small>
+        {:else}
+          <small class="helper-text font-mono">
+            <span>Belum login? Gunakan tombol <strong>LOGIN TG</strong> di atas agar Chat ID terisi otomatis.</span>
+          </small>
+        {/if}
       </div>
 
       <!-- Target Price (Optional) -->
@@ -255,11 +262,12 @@
     color: var(--text-muted);
   }
 
-  .helper-text code {
-    background-color: #E4E4E7;
-    padding: 1px 4px;
-    border: 1px solid #D4D4D8;
-    color: #18181B;
+  .helper-connected {
+    color: #065F46;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
   }
 
   .error-box {
