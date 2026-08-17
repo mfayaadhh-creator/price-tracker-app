@@ -1,4 +1,6 @@
 <script>
+  import Icon from "./Icon.svelte";
+
   export let totalTracks = 0;
   export let isSyncing = false;
   export let onSync;
@@ -16,7 +18,7 @@
       <div class="brand-badge">
         <span class="pixel-dot"></span>
         <span class="font-pixel brand-title">PRICE_TRACKER</span>
-        <span class="version-tag">v1.0</span>
+        <span class="version-tag">v2.0</span>
       </div>
       <p class="brand-subtitle font-mono">
         // MULTI-STORE PRICE TRACKER & REAL-TIME TELEGRAM ALERT ENGINE
@@ -40,7 +42,7 @@
       <!-- Auth Action Button (Login or User Profile) -->
       {#if currentUser}
         <div class="user-profile-badge font-mono">
-          <span class="user-avatar">👤</span>
+          <Icon name="user" size={15} color="var(--accent-orange)" />
           <span class="user-name">
             <strong>{currentUser.first_name || "User"}</strong>
             <small>({currentUser.user_phone})</small>
@@ -61,7 +63,7 @@
           on:click={onOpenLogin}
           title="Masuk menggunakan akun Telegram Anda"
         >
-          <span>🔐</span>
+          <Icon name="lock" size={14} color="#00E676" />
           <span>LOGIN VIA TELEGRAM</span>
         </button>
       {/if}
@@ -73,7 +75,7 @@
         class="pixel-btn pixel-btn-orange font-mono"
         title="Jalankan evaluasi harga ke seluruh produk"
       >
-        <span>⚡</span>
+        <Icon name="refresh" size={14} className={isSyncing ? "spin-icon" : ""} />
         <span>{isSyncing ? "SYNCING..." : "SYNC CRON"}</span>
       </button>
     </div>
@@ -190,10 +192,6 @@
     padding: 6px 12px;
     box-shadow: 2px 2px 0px var(--border-color);
     font-size: 0.8rem;
-  }
-
-  .user-avatar {
-    font-size: 1rem;
   }
 
   .user-name {

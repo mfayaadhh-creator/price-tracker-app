@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
+  import Icon from "./Icon.svelte";
 
   export let isOpen = false;
   export let onClose;
@@ -143,10 +144,11 @@
       <!-- Modal Header -->
       <div class="modal-header">
         <div class="header-title font-pixel">
-          <span>🔐</span> LOGIN_TELEGRAM // AUTH
+          <Icon name="lock" size={16} color="#00E676" />
+          <span>LOGIN_TELEGRAM // AUTH</span>
         </div>
-        <button type="button" class="close-btn" on:click={onClose}>
-          ✕
+        <button type="button" class="close-btn" on:click={onClose} title="Tutup">
+          <Icon name="close" size={14} />
         </button>
       </div>
 
@@ -157,14 +159,16 @@
           class="tab-btn {activeTab === 'deeplink' ? 'active' : ''}"
           on:click={() => activeTab = 'deeplink'}
         >
-          ⚡ DEEP-LINK BOT (AUTO)
+          <Icon name="bolt" size={14} color="#FF5722" />
+          <span>DEEP-LINK BOT (AUTO)</span>
         </button>
         <button 
           type="button" 
           class="tab-btn {activeTab === 'manual' ? 'active' : ''}"
           on:click={() => activeTab = 'manual'}
         >
-          ⌨️ INPUT CHAT ID
+          <Icon name="user" size={14} />
+          <span>INPUT CHAT ID</span>
         </button>
       </div>
 
@@ -188,17 +192,19 @@
               rel="noopener noreferrer" 
               class="pixel-btn pixel-btn-blue telegram-cta font-mono"
             >
-              <span>🤖</span>
+              <Icon name="send" size={16} color="#FFFFFF" />
               <span>BUKA TELEGRAM & VERIFIKASI</span>
-              <span>↗</span>
+              <Icon name="external-link" size={14} color="#FFFFFF" />
             </a>
 
             <!-- Polling Live Status -->
             {#if isTimedOut}
               <div class="timeout-box font-mono">
-                <span>⏱️ Sesi login berakhir (1 menit).</span>
+                <Icon name="warning" size={14} color="#DC2626" />
+                <span>Sesi login berakhir (1 menit).</span>
                 <button type="button" on:click={initAuthSession} class="pixel-btn retry-btn font-mono">
-                  🔄 REFRESH SESI
+                  <Icon name="refresh" size={13} />
+                  <span>REFRESH SESI</span>
                 </button>
               </div>
             {:else}

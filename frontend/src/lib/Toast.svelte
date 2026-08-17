@@ -1,4 +1,5 @@
 <script>
+  import Icon from "./Icon.svelte";
   export let toasts = [];
   export let onRemove;
 </script>
@@ -8,9 +9,13 @@
     <div class="toast-item pixel-box toast-{t.type} font-mono">
       <div class="toast-content">
         <span class="toast-icon">
-          {#if t.type === 'success'}✅
-          {:else if t.type === 'error'}❌
-          {:else}⚡{/if}
+          {#if t.type === 'success'}
+            <Icon name="check" size={15} color="#065F46" strokeWidth={2.5} />
+          {:else if t.type === 'error'}
+            <Icon name="warning" size={15} color="#991B1B" strokeWidth={2.5} />
+          {:else}
+            <Icon name="bolt" size={15} color="#854D0E" strokeWidth={2.5} />
+          {/if}
         </span>
         <span class="toast-text">{t.message}</span>
       </div>
@@ -18,8 +23,9 @@
         type="button" 
         on:click={() => onRemove(t.id)} 
         class="toast-close"
+        title="Tutup notifikasi"
       >
-        ✕
+        <Icon name="close" size={12} />
       </button>
     </div>
   {/each}

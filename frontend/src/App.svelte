@@ -6,6 +6,7 @@
   import Toast from "./lib/Toast.svelte";
   import AuthModal from "./lib/AuthModal.svelte";
   import ImagePreviewModal from "./lib/ImagePreviewModal.svelte";
+  import Icon from "./lib/Icon.svelte";
 
   let products = [];
   let isLoading = true;
@@ -32,44 +33,52 @@
     toasts = toasts.filter((t) => t.id !== id);
   }
 
-  async function fetchProducts() {
-    isLoading = true;
+  async function checkCurrentUser() {
     try {
-      let endpoint = "/api/v1/tracks";
-      if (currentUser && currentUser.user_phone) {
-        endpoint += `?chat_id=${encodeURIComponent(currentUser.user_phone)}`;
+      const res = await fetch("/api/v1/auth/me");
+      if (res.ok) {
+        currentUser = await res.json();
       }
-
-      const res = await fetch(endpoint);
-      if (!res.ok) throw new Error("Gagal mengambil data produk");
-      const data = await res.json();
-      products = data.data || [];
     } catch (err) {
-      console.error(err);
-      showToast("Gagal memuat produk dari server", "error");
-    } finally {
-      isLoading = false;
+      console.error("Auth check failed:", err);
     }
   }
 
   function handleLoginSuccess(user) {
     currentUser = user;
-    localStorage.setItem("pt_auth_user", JSON.stringify(user));
-    showToast(`🎉 Selamat datang kembali, ${user.first_name}!`, "success");
-    fetchProducts();
+    showToast(`Selamat datang kembali, ${user.first_name || "User"}!`, "success");
+    loadProducts();
   }
 
-  function handleLogout() {
-    currentUser = null;
-    localStorage.removeItem("pt_auth_user");
-    showToast("Anda telah keluar dari akun.", "info");
-    fetchProducts();
+  async function handleLogout() {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+      currentUser = null;
+      showToast("Berhasil logout dari sesi", "info");
+      loadProducts();
+    } catch (err) {
+      showToast("Gagal logout", "error");
+    }
+  }
+
+  async function loadProducts() {
+    isLoading = true;
+    try {
+      const res = await fetch("/api/v1/products");
+      if (!res.ok) throw new Error("Gagal mengambil data produk");
+      const data = await res.json();
+      products = data || [];
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      isLoading = false;
+    }
   }
 
   async function handleAddProduct(payload) {
     isSubmitting = true;
     try {
-      const res = await fetch("/api/v1/track", {
+      const res = await fetch("/api/v1/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -81,13 +90,12 @@
         throw new Error(data.error || "Gagal menambahkan produk");
       }
 
-      showToast(`✅ "${data.data.name}" berhasil ditambahkan ke pemantauan!`, "success");
-      // Add to front of products list
-      products = [data.data, ...products];
+      showToast(`Produk "${data.name}" berhasil dipantau!`, "success");
+      await loadProducts();
       return true;
     } catch (err) {
       console.error(err);
-      showToast(`❌ ${err.message}`, "error");
+      showToast(err.message, "error");
       return false;
     } finally {
       isSubmitting = false;
@@ -96,111 +104,122 @@
 
   async function handleDeleteProduct(id) {
     try {
-      const res = await fetch(`/api/v1/tracks/${id}`, {
+      const res = await fetch(`/api/v1/products?id=${id}`, {
         method: "DELETE"
       });
 
-      if (!res.ok) throw new Error("Gagal menghapus produk");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Gagal menghapus produk");
+      }
 
+      showToast("Block produk berhasil dihapus!", "info");
       products = products.filter((p) => p.id !== id);
-      showToast("🗑️ Block produk berhasil dihapus dari tracking list!", "info");
     } catch (err) {
       console.error(err);
-      showToast("Gagal menghapus produk", "error");
+      showToast(err.message, "error");
     }
   }
 
   async function handleSyncCron() {
     isSyncing = true;
     try {
-      const res = await fetch("/api/cron");
-      if (!res.ok) throw new Error("Gagal menjalankan sinkronisasi cron");
+      const res = await fetch("/api/v1/cron/trigger", {
+        method: "POST"
+      });
       const data = await res.json();
-      
-      const result = data.result || {};
-      const drops = result.price_drops || 0;
-      const checked = result.total_checked || 0;
+      if (!res.ok) throw new Error(data.error || "Gagal sinkronisasi cron");
 
-      if (drops > 0) {
-        showToast(`🎉 ${drops} penurunan harga terdeteksi & alert terkirim ke Telegram!`, "success");
-      } else {
-        showToast(`⚡ Evaluasi selesai: ${checked} produk dicek (harga masih stabil).`, "info");
-      }
-
-      // Refresh products from database
-      await fetchProducts();
+      showToast(`Sinkronisasi selesai: ${data.evaluated || 0} produk dicek (${data.alerts_sent || 0} diskon baru)`, "success");
+      await loadProducts();
     } catch (err) {
       console.error(err);
-      showToast("Gagal menjalankan evaluasi harga", "error");
+      showToast(err.message, "error");
     } finally {
       isSyncing = false;
     }
   }
 
   // --- Re-order / Drag & Drop Handlers ---
-  function handleDragStart(e, index) {
+  function handleDragStart(index) {
     draggedIndex = index;
-    e.dataTransfer.effectAllowed = "move";
   }
 
-  function handleDragOver(e, index) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+  function handleDragOver(index) {
+    // Handled visually by ProductBlock component
   }
 
-  function handleDrop(e, targetIndex) {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === targetIndex) return;
+  function handleDrop(sourceIndex, targetIndex) {
+    if (sourceIndex === targetIndex || sourceIndex === null) return;
 
-    const updated = [...products];
-    const [movedItem] = updated.splice(draggedIndex, 1);
-    updated.splice(targetIndex, 0, movedItem);
-    products = updated;
+    const reordered = [...products];
+    const [movedItem] = reordered.splice(sourceIndex, 1);
+    reordered.splice(targetIndex, 0, movedItem);
+    products = reordered;
     draggedIndex = null;
+    saveReorderOrder();
   }
 
   function handleMoveLeft(index) {
     if (index <= 0) return;
-    const updated = [...products];
-    const temp = updated[index];
-    updated[index] = updated[index - 1];
-    updated[index - 1] = temp;
-    products = updated;
+    const reordered = [...products];
+    const temp = reordered[index];
+    reordered[index] = reordered[index - 1];
+    reordered[index - 1] = temp;
+    products = reordered;
+    saveReorderOrder();
   }
 
   function handleMoveRight(index) {
     if (index >= products.length - 1) return;
-    const updated = [...products];
-    const temp = updated[index];
-    updated[index] = updated[index + 1];
-    updated[index + 1] = temp;
-    products = updated;
+    const reordered = [...products];
+    const temp = reordered[index];
+    reordered[index] = reordered[index + 1];
+    reordered[index + 1] = temp;
+    products = reordered;
+    saveReorderOrder();
+  }
+
+  function saveReorderOrder() {
+    try {
+      const orderIds = products.map(p => p.id);
+      localStorage.setItem("price_tracker_block_order", JSON.stringify(orderIds));
+    } catch (err) {
+      console.error("Failed to save reorder state:", err);
+    }
   }
 
   $: filteredProducts = products.filter((p) => {
     if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      (p.name && p.name.toLowerCase().includes(query)) ||
-      (p.product_id && p.product_id.toLowerCase().includes(query)) ||
-      (p.user_phone && p.user_phone.toLowerCase().includes(query))
-    );
+    const q = searchQuery.toLowerCase();
+    const nameMatch = p.name && p.name.toLowerCase().includes(q);
+    const phoneMatch = p.user_phone && p.user_phone.includes(q);
+    const platformMatch = p.platform && p.platform.toLowerCase().includes(q);
+    return nameMatch || phoneMatch || platformMatch;
   });
 
   onMount(() => {
-    try {
-      const savedUser = localStorage.getItem("pt_auth_user");
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
+    checkCurrentUser();
+    loadProducts().then(() => {
+      try {
+        const savedOrder = localStorage.getItem("price_tracker_block_order");
+        if (savedOrder && products.length > 0) {
+          const parsed = JSON.parse(savedOrder);
+          const orderMap = new Map(parsed.map((id, idx) => [id, idx]));
+          products = [...products].sort((a, b) => {
+            const idxA = orderMap.has(a.id) ? orderMap.get(a.id) : 9999;
+            const idxB = orderMap.has(b.id) ? orderMap.get(b.id) : 9999;
+            return idxA - idxB;
+          });
+        }
+      } catch (e) {
+        console.error("Order restore err:", e);
       }
-    } catch (e) {
-      console.error("Gagal load user dari localStorage:", e);
-    }
-    fetchProducts();
+    });
   });
 </script>
 
-<div class="app-wrapper">
+<div class="app-shell">
   <!-- Sticky Pixel Header -->
   <Header 
     totalTracks={products.length} 
@@ -216,7 +235,8 @@
     <section class="hero-banner pixel-box">
       <div class="hero-content">
         <div class="hero-badge font-pixel">
-          <span>⚡</span> MISTRAL NEO-PIXEL EDITION
+          <Icon name="bolt" size={13} color="#FF5722" strokeWidth={2.5} />
+          <span>MULTI-STORE PRICE ENGINE v2.0</span>
         </div>
         <h1 class="hero-title font-display">
           PANTAU DISKON FASHION DENGAN <span class="highlight-text">MODULAR BLOCKS</span>
@@ -257,7 +277,8 @@
       <div class="section-header">
         <div class="section-title-group">
           <h2 class="section-title font-pixel">
-            <span>📦</span> ACTIVE_BLOCKS ({filteredProducts.length})
+            <Icon name="grid" size={16} color="#FF5722" />
+            <span>ACTIVE_BLOCKS ({filteredProducts.length})</span>
           </h2>
           <span class="drag-hint font-mono">
             // Tahan & geser (drag) atau gunakan tombol ◀ ▶ untuk mengatur urutan block
@@ -287,7 +308,9 @@
       <!-- Empty State -->
       {:else if products.length === 0}
         <div class="empty-box pixel-box">
-          <div class="empty-pixel-icon font-pixel">[ ? ]</div>
+          <div class="empty-pixel-icon">
+            <Icon name="package" size={48} color="#A1A1AA" />
+          </div>
           <h3 class="empty-title font-display">Belum Ada Block Produk yang Dipantau</h3>
           <p class="empty-desc font-mono">
             Salin link produk dari website toko favorit Anda (Uniqlo, Zara, Zalora, H&M, dll) dan masukkan pada form di atas untuk memulai pemantauan harga otomatis!
@@ -340,7 +363,7 @@
 </div>
 
 <style>
-  .app-wrapper {
+  .app-shell {
     min-height: 100vh;
     display: flex;
     flex-direction: column;

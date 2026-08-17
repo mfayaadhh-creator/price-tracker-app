@@ -1,4 +1,6 @@
 <script>
+  import Icon from "./Icon.svelte";
+
   export let product;
   export let index;
   export let total;
@@ -24,15 +26,12 @@
     }).format(amount);
   }
 
-  function calculateSavings(base, current) {
-    if (base > current) {
-      return base - current;
-    }
-    return 0;
-  }
+  $: hasDiscount = product.is_discount || (product.base_price > product.last_price && product.last_price > 0);
+  $: isUnavailable = product.status === "unavailable";
+  $: savings = product.base_price - product.last_price;
 
   async function handleDelete() {
-    if (confirm(`Apakah Anda yakin ingin menghapus pemantauan untuk "${product.name}"?`)) {
+    if (confirm(`Yakin ingin berhenti memantau "${product.name}"?`)) {
       isDeleting = true;
       await onDelete(product.id);
       isDeleting = false;
@@ -41,7 +40,9 @@
 
   function handleInternalDragStart(e) {
     isDragging = true;
-    onDragStart(e, index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index.toString());
+    onDragStart(index);
   }
 
   function handleInternalDragEnd() {
@@ -50,8 +51,10 @@
   }
 
   function handleInternalDragOver(e) {
-    onDragOver(e, index);
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
     isDragOver = true;
+    onDragOver(index);
   }
 
   function handleInternalDragLeave() {
@@ -59,14 +62,14 @@
   }
 
   function handleInternalDrop(e) {
+    e.preventDefault();
     isDragOver = false;
     isDragging = false;
-    onDrop(e, index);
+    const sourceIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if (!isNaN(sourceIndex) && sourceIndex !== index) {
+      onDrop(sourceIndex, index);
+    }
   }
-
-  $: savings = calculateSavings(product.base_price, product.last_price);
-  $: hasDiscount = product.is_discount || (product.base_price > product.last_price);
-  $: isUnavailable = product.status === "unavailable";
 </script>
 
 <article 
@@ -83,11 +86,11 @@
   <div class="block-header">
     <div class="header-left">
       <span class="drag-handle font-mono" title="Tahan & geser untuk mengubah urutan">
-        <span class="drag-icon">⠿</span>
+        <Icon name="grip" size={13} color="var(--text-muted)" />
         <span class="block-num font-pixel">BLOCK_{index + 1}</span>
       </span>
       <span class="pixel-tag pixel-tag-dark">
-        {product.platform || "UNIQLO"}
+        {product.platform || "E-COMMERCE"}
       </span>
     </div>
 
@@ -121,7 +124,7 @@
         on:click={handleDelete}
         title="Hapus pemantauan produk ini"
       >
-        ✕
+        <Icon name="close" size={12} />
       </button>
     </div>
   </div>
@@ -147,11 +150,13 @@
             class="product-image"
             on:error={() => imageError = true}
           />
-          <span class="zoom-badge font-mono">🔍 HD</span>
+          <span class="zoom-badge font-mono">
+            <Icon name="expand" size={11} color="#FFFFFF" /> HD
+          </span>
         </div>
       {:else}
         <div class="image-placeholder font-pixel" title="Foto produk default">
-          <span>👕</span>
+          <Icon name="package" size={28} color="#A1A1AA" />
         </div>
       {/if}
 
@@ -165,18 +170,18 @@
         <div class="meta-badges">
           {#if isUnavailable}
             <span class="pixel-tag pixel-tag-danger font-mono">
-              ⚠️ TIDAK TERSEDIA (404)
+              <Icon name="warning" size={12} color="#DC2626" /> TIDAK TERSEDIA (404)
             </span>
           {/if}
           <span class="pixel-tag pixel-tag-orange font-mono">
             ID: {product.product_id || "N/A"}
           </span>
           <span class="pixel-tag pixel-tag-blue font-mono" title="Notifikasi dikirim ke Chat ID ini">
-            📱 TG: {product.user_phone}
+            <Icon name="send" size={11} color="var(--accent-blue)" /> TG: {product.user_phone}
           </span>
           {#if product.target_price > 0}
             <span class="pixel-tag pixel-tag-green font-mono">
-              🎯 TARGET: {formatIDR(product.target_price)}
+              <Icon name="tag" size={11} color="#065F46" /> TARGET: {formatIDR(product.target_price)}
             </span>
           {/if}
         </div>
@@ -206,15 +211,18 @@
       <!-- Status / Discount Banner -->
       {#if isUnavailable}
         <div class="unavailable-banner font-mono font-pixel">
-          <span>⚠️ PRODUK HABIS / HALAMAN TIDAK TERSEDIA</span>
+          <Icon name="warning" size={14} color="#DC2626" />
+          <span>PRODUK HABIS / HALAMAN TIDAK TERSEDIA</span>
         </div>
       {:else if hasDiscount}
         <div class="savings-banner font-mono font-pixel">
-          <span>🔥 HEMAT: {formatIDR(savings)}</span>
+          <Icon name="trending-down" size={14} color="#00E676" />
+          <span>HEMAT: {formatIDR(savings)}</span>
         </div>
       {:else}
         <div class="normal-banner font-mono">
-          <span>● HARGA NORMAL (STANDAR)</span>
+          <span class="dot-neutral"></span>
+          <span>HARGA NORMAL (STANDAR)</span>
         </div>
       {/if}
     </div>
@@ -225,11 +233,11 @@
     <a 
       href={product.url} 
       target="_blank" 
-      rel="noopener noreferrer"
+      rel="noopener noreferrer" 
       class="pixel-btn visit-btn font-mono"
     >
       <span>BUKA WEB {product.platform || "TOKO"}</span>
-      <span>↗</span>
+      <Icon name="external-link" size={13} />
     </a>
   </div>
 </article>
@@ -287,16 +295,10 @@
   .drag-handle {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-main);
-  }
-
-  .drag-icon {
-    font-size: 1.1rem;
-    color: var(--accent-orange);
-    letter-spacing: -2px;
   }
 
   .block-num {

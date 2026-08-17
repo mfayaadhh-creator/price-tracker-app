@@ -1,4 +1,6 @@
 <script>
+  import Icon from "./Icon.svelte";
+
   export let onAddProduct;
   export let isSubmitting = false;
   export let currentUser = null;
@@ -54,7 +56,7 @@
 <div class="creator-card pixel-box">
   <div class="creator-header">
     <div class="header-tag font-pixel">
-      <span>[+]</span> TAMBAH BLOCK BARU
+      <Icon name="plus" size={14} color="#FF5722" strokeWidth={2.5} /> TAMBAH BLOCK BARU
     </div>
     <span class="header-desc font-mono">
       Tempel link toko apa saja (Uniqlo, Zara, Zalora, H&M, dll) → Auto scraping & pantau 24/7
@@ -134,7 +136,7 @@
     <!-- Error Message -->
     {#if formError}
       <div class="error-box font-mono">
-        <span>⚠️</span>
+        <Icon name="warning" size={15} color="#DC2626" />
         <span>{formError}</span>
       </div>
     {/if}
@@ -150,7 +152,7 @@
           <span class="spinner-pixel"></span>
           <span>SEDANG MENGAMBIL DATA HARGA LIVE...</span>
         {:else}
-          <span>⚡</span>
+          <Icon name="bolt" size={15} color="#FFFFFF" />
           <span>MULAI PANTAU HARGA PRODUK INI</span>
         {/if}
       </button>

@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
+  import Icon from "./Icon.svelte";
 
   export let data = null; // { name, image_url, price, base_price, url, platform }
   export let onClose;
@@ -50,7 +51,8 @@
           <span class="header-id font-mono">PHOTO_PREVIEW // HD</span>
         </div>
         <button type="button" class="close-btn font-mono" on:click={onClose} title="Tutup (Esc)">
-          ✕ ESC
+          <Icon name="close" size={12} />
+          <span>ESC</span>
         </button>
       </div>
 
@@ -70,7 +72,9 @@
           <div class="pricing-badge font-mono font-pixel">
             <span>HARGA: {formatIDR(data.last_price || data.base_price)}</span>
             {#if data.base_price > data.last_price && data.last_price > 0}
-              <span class="savings-tag">🔥 HEMAT {formatIDR(data.base_price - data.last_price)}</span>
+              <span class="savings-tag">
+                <Icon name="trending-down" size={13} color="#00E676" /> HEMAT {formatIDR(data.base_price - data.last_price)}
+              </span>
             {/if}
           </div>
         </div>
@@ -83,7 +87,7 @@
             class="pixel-btn pixel-btn-orange font-mono visit-btn"
           >
             <span>BUKA DI WEB TOKO</span>
-            <span>↗</span>
+            <Icon name="external-link" size={13} />
           </a>
         {/if}
       </div>
