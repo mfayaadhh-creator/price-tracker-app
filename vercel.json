@@ -12,6 +12,10 @@
     {
       "source": "/test-scrape",
       "destination": "/api/index.go"
+    },
+    {
+      "source": "/((?!api/|healthz|test-scrape).*)",
+      "destination": "/index.html"
     }
   ],
   "crons": [
