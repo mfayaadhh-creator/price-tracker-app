@@ -16,6 +16,7 @@ import (
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
 	"price_tracker/internal/service"
+	"price_tracker/internal/telegram"
 )
 
 func main() {
@@ -47,10 +48,13 @@ func main() {
 	defer repo.Close()
 	slog.Info("Berhasil terhubung ke Database Supabase")
 
-	// 2. Scraper, Service & Handler
+	// 2. Scraper, Notifier, Service & Handler
+	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	telegramNotifier := telegram.NewTelegramNotifier(botToken)
+
 	uniqloScraper := scraper.NewUniqloScraper()
 	trackManager := scraper.NewTrackerManager(uniqloScraper)
-	trackerService := service.NewTrackerService(repo, trackManager)
+	trackerService := service.NewTrackerService(repo, trackManager, telegramNotifier)
 	productHandler := handler.NewProductHandler(repo, trackManager, trackerService)
 
 	// 3. Router

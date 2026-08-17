@@ -15,6 +15,7 @@ import (
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
 	"price_tracker/internal/service"
+	"price_tracker/internal/telegram"
 )
 
 var app http.Handler
@@ -40,9 +41,12 @@ func init() {
 
 		repo, err := repository.NewProductRepository(ctx, dbURL)
 		if err == nil {
+			botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+			telegramNotifier := telegram.NewTelegramNotifier(botToken)
+
 			uniqloScraper := scraper.NewUniqloScraper()
 			trackManager := scraper.NewTrackerManager(uniqloScraper)
-			trackerService := service.NewTrackerService(repo, trackManager)
+			trackerService := service.NewTrackerService(repo, trackManager, telegramNotifier)
 			productHandler := handler.NewProductHandler(repo, trackManager, trackerService)
 
 			r.Get("/test-scrape", productHandler.TestScrape)
