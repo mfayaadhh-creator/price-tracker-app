@@ -1,0 +1,228 @@
+/* Neo-Brutalist Pixelated Design System (Mistral AI Aesthetic) */
+
+:root {
+  --bg-canvas: #F6F4EE;
+  --bg-canvas-subtle: #ECE9DF;
+  --bg-card: #FFFFFF;
+  --bg-card-highlight: #FFFDF5;
+  --bg-card-dark: #18181B;
+  
+  --text-main: #18181B;
+  --text-muted: #52525B;
+  --text-light: #F4F4F5;
+  
+  --accent-orange: #FF5722;
+  --accent-orange-hover: #E64A19;
+  --accent-green: #10B981;
+  --accent-green-light: #D1FAE5;
+  --accent-blue: #0088CC;
+  --accent-blue-light: #E0F2FE;
+  --accent-yellow: #FEF08A;
+  --accent-red: #EF4444;
+  
+  --border-color: #18181B;
+  --border-width: 2.5px;
+  
+  --shadow-sm: 2px 2px 0px #18181B;
+  --shadow-md: 4px 4px 0px #18181B;
+  --shadow-lg: 6px 6px 0px #18181B;
+  --shadow-orange: 4px 4px 0px #C2410C;
+  --shadow-green: 4px 4px 0px #047857;
+  --shadow-blue: 4px 4px 0px #0369A1;
+
+  --font-pixel: 'Silkscreen', monospace, cursive;
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100vh;
+  background-color: var(--bg-canvas);
+  color: var(--text-main);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Background Retro Dot Grid */
+body {
+  background-image: radial-gradient(#D4D0C5 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+/* Typography Helpers */
+.font-pixel {
+  font-family: var(--font-pixel);
+  letter-spacing: -0.5px;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Neo-Brutalist Pixel Cards */
+.pixel-box {
+  background-color: var(--bg-card);
+  border: var(--border-width) solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pixel-box:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Interactive Buttons */
+.pixel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: var(--border-width) solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
+}
+
+.pixel-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-md);
+}
+
+.pixel-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #18181B;
+}
+
+.pixel-btn-orange {
+  background-color: var(--accent-orange);
+  color: #FFFFFF;
+}
+
+.pixel-btn-orange:hover {
+  background-color: var(--accent-orange-hover);
+}
+
+.pixel-btn-dark {
+  background-color: var(--bg-card-dark);
+  color: #FFFFFF;
+}
+
+.pixel-btn-blue {
+  background-color: var(--accent-blue);
+  color: #FFFFFF;
+}
+
+.pixel-btn-green {
+  background-color: var(--accent-green);
+  color: #FFFFFF;
+}
+
+.pixel-btn-danger {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.pixel-btn-danger:hover {
+  background-color: #DC2626;
+  color: #FFFFFF;
+}
+
+/* Badges / Tags */
+.pixel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 1.5px solid var(--border-color);
+  background-color: var(--bg-canvas-subtle);
+  box-shadow: 1.5px 1.5px 0px var(--border-color);
+}
+
+.pixel-tag-orange {
+  background-color: var(--accent-yellow);
+  color: #9A3412;
+}
+
+.pixel-tag-green {
+  background-color: var(--accent-green-light);
+  color: #065F46;
+}
+
+.pixel-tag-blue {
+  background-color: var(--accent-blue-light);
+  color: #0369A1;
+}
+
+.pixel-tag-dark {
+  background-color: var(--bg-card-dark);
+  color: #FFFFFF;
+}
+
+/* Pixel Inputs */
+.pixel-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--text-main);
+  background-color: #FFFFFF;
+  border: var(--border-width) solid var(--border-color);
+  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.06);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pixel-input:focus {
+  border-color: var(--accent-orange);
+  box-shadow: 3px 3px 0px var(--accent-orange);
+}
+
+/* Animation utilities */
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+  border-left: 2px solid var(--border-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-main);
+  border: 2px solid var(--bg-canvas);
+}

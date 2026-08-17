@@ -27,5 +27,11 @@ price_tracker
 .DS_Store
 Thumbs.db
 
+# Frontend Dependencies & Build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
 *.md
 !README.md
