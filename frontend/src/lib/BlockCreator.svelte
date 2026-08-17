@@ -91,54 +91,87 @@
       </div>
     </div>
 
-    <!-- Row: Chat ID & Target Budget -->
-    <div class="form-row">
-      <!-- Telegram Chat ID -->
-      <div class="input-group flex-1">
-        <label for="telegram-id" class="input-label font-mono">
-          <span class="label-badge font-pixel">TG</span>
-          CHAT ID TELEGRAM PENERIMA:
-        </label>
-        <input 
-          id="telegram-id"
-          type="text" 
-          bind:value={userPhone} 
-          placeholder="Contoh: 7514771766"
-          class="pixel-input"
-          disabled={isSubmitting}
-          required
-        />
-        {#if currentUser && currentUser.user_phone}
-          <small class="helper-text helper-connected font-mono">
-            <Icon name="check" size={12} color="#065F46" />
-            <span>Terhubung otomatis: <strong>{currentUser.first_name || 'Akun Telegram'}</strong> ({currentUser.user_phone})</span>
-          </small>
-        {:else}
+    <!-- Row: Chat ID & Target Budget (Conditional on Login Status) -->
+    {#if currentUser && currentUser.user_phone}
+      <div class="form-row">
+        <!-- Target Price -->
+        <div class="input-group flex-1">
+          <label for="target-price" class="input-label font-mono">
+            <span class="label-badge font-pixel">IDR</span>
+            TARGET BUDGET / HARGA MAKSIMAL (OPSIONAL):
+          </label>
+          <input 
+            id="target-price"
+            type="number" 
+            bind:value={targetPrice} 
+            placeholder="Contoh: 15000000 (Kosongkan jika ingin alert di setiap penurunan)"
+            class="pixel-input"
+            disabled={isSubmitting}
+          />
           <small class="helper-text font-mono">
-            <span>Belum login? Gunakan tombol <strong>LOGIN TG</strong> di atas agar Chat ID terisi otomatis.</span>
+            Kosongkan jika ingin selalu menerima alert setiap kali ada penurunan harga.
           </small>
-        {/if}
-      </div>
+        </div>
 
-      <!-- Target Price (Optional) -->
-      <div class="input-group flex-1">
-        <label for="target-price" class="input-label font-mono">
-          <span class="label-badge font-pixel">IDR</span>
-          TARGET BUDGET (OPSIONAL):
-        </label>
-        <input 
-          id="target-price"
-          type="number" 
-          bind:value={targetPrice} 
-          placeholder="Contoh: 180000 (Opsional)"
-          class="pixel-input"
-          disabled={isSubmitting}
-        />
-        <small class="helper-text font-mono">
-          Kosongkan jika ingin notifikasi untuk setiap penurunan harga
-        </small>
+        <!-- Connected Telegram Account Card -->
+        <div class="account-card flex-1 font-mono">
+          <div class="account-header">
+            <span class="label-badge font-pixel">TG</span>
+            <span class="account-label">PENERIMA ALERT NOTIFIKASI:</span>
+          </div>
+          <div class="account-details">
+            <div class="account-icon-wrap">
+              <Icon name="check" size={14} color="#065F46" strokeWidth={2.5} />
+            </div>
+            <div class="account-info">
+              <strong class="account-name">{currentUser.first_name || "User Telegram"}</strong>
+              <span class="account-chatid">Chat ID: <code>{currentUser.user_phone}</code> (Otomatis Terhubung)</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    {:else}
+      <div class="form-row">
+        <!-- Telegram Chat ID -->
+        <div class="input-group flex-1">
+          <label for="telegram-id" class="input-label font-mono">
+            <span class="label-badge font-pixel">TG</span>
+            CHAT ID TELEGRAM PENERIMA:
+          </label>
+          <input 
+            id="telegram-id"
+            type="text" 
+            bind:value={userPhone} 
+            placeholder="Contoh: 7514771766"
+            class="pixel-input"
+            disabled={isSubmitting}
+            required
+          />
+          <small class="helper-text font-mono">
+            💡 Tips: Gunakan tombol <strong>LOGIN TG</strong> di header agar Chat ID terisi otomatis.
+          </small>
+        </div>
+
+        <!-- Target Price (Optional) -->
+        <div class="input-group flex-1">
+          <label for="target-price-guest" class="input-label font-mono">
+            <span class="label-badge font-pixel">IDR</span>
+            TARGET BUDGET (OPSIONAL):
+          </label>
+          <input 
+            id="target-price-guest"
+            type="number" 
+            bind:value={targetPrice} 
+            placeholder="Contoh: 180000 (Opsional)"
+            class="pixel-input"
+            disabled={isSubmitting}
+          />
+          <small class="helper-text font-mono">
+            Kosongkan jika ingin notifikasi untuk setiap penurunan harga.
+          </small>
+        </div>
+      </div>
+    {/if}
 
     <!-- Error Message -->
     {#if formError}
@@ -262,12 +295,63 @@
     color: var(--text-muted);
   }
 
-  .helper-connected {
-    color: #065F46;
-    display: inline-flex;
+  .account-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .account-header {
+    display: flex;
     align-items: center;
-    gap: 4px;
-    font-weight: 600;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .account-details {
+    background-color: var(--accent-green-light);
+    border: 2px solid #065F46;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 2px 2px 0px #065F46;
+    min-height: 48px;
+  }
+
+  .account-icon-wrap {
+    background-color: #FFFFFF;
+    border: 1.5px solid #065F46;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 1px 1px 0px #065F46;
+  }
+
+  .account-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .account-name {
+    font-size: 0.85rem;
+    color: #065F46;
+  }
+
+  .account-chatid {
+    font-size: 0.72rem;
+    color: #047857;
+  }
+
+  .account-chatid code {
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 1px 4px;
+    border: 1px solid #065F46;
+    font-weight: 700;
   }
 
   .error-box {
