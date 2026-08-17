@@ -1,31 +1,46 @@
 package scraper
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html"
 	"io"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
+	http "github.com/bogdanfinn/fhttp"
+
 	"price_tracker/internal/domain"
 )
 
 type UniversalScraper struct {
-	httpClient *http.Client
+	client tls_client.HttpClient
 }
 
 func NewUniversalScraper() *UniversalScraper {
+	jar := tls_client.NewCookieJar()
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(25),
+		tls_client.WithClientProfile(profiles.Chrome_120),
+		tls_client.WithCookieJar(jar),
+	}
+
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	if err != nil {
+		// Fallback to default options if error
+		client, _ = tls_client.NewHttpClient(tls_client.NewNoopLogger())
+	}
+
 	return &UniversalScraper{
-		httpClient: &http.Client{
-			Timeout: 15 * time.Second,
-		},
+		client: client,
 	}
 }
 
@@ -34,44 +49,56 @@ func (s *UniversalScraper) CanHandle(rawURL string) bool {
 }
 
 func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
-	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	req, err := http.NewRequest("GET", rawURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("URL tidak valid: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7")
+	req.Header.Set("Sec-Ch-Ua", `"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"`)
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", `"Windows"`)
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "none")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
 
-	resp, err := s.httpClient.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("gagal mengambil halaman produk: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+	if resp.StatusCode == 404 || resp.StatusCode == 410 {
 		return nil, fmt.Errorf("PRODUK_UNAVAILABLE: halaman produk tidak ditemukan (status %d)", resp.StatusCode)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("halaman web mengembalikan status %d", resp.StatusCode)
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("gagal membaca HTML: %w", err)
+		return nil, fmt.Errorf("gagal membaca data HTML: %w", err)
 	}
 
 	htmlContent := string(bodyBytes)
+
+	// 0. Auto-Solver: Deteksi & Selesaikan Interstitial Challenge (Akamai WAF seperti pada Zara)
+	if strings.Contains(htmlContent, "triggerInterstitialChallenge") {
+		resolvedHTML, err := s.solveAkamaiChallenge(rawURL, htmlContent)
+		if err == nil && len(resolvedHTML) > 0 {
+			htmlContent = resolvedHTML
+		}
+	}
 
 	var name, imageURL string
 	var currentPrice, basePrice float64
 	var sku string
 
-	// 1. Ekstraksi Tier 1: Next.js __NEXT_DATA__ (Digunakan oleh Zalora, Tokopedia, dll)
+	// 1. Ekstraksi Tier 1: Next.js __NEXT_DATA__ (Zalora, Tokopedia, dll)
 	name, imageURL, currentPrice, basePrice = parseNextData(htmlContent)
 
-	// 2. Ekstraksi Tier 2: Schema.org JSON-LD (Digunakan oleh Shopify, WooCommerce, H&M, dll)
+	// 2. Ekstraksi Tier 2: Schema.org JSON-LD (Shopify, WooCommerce, H&M, dll)
 	if name == "" || currentPrice == 0 {
 		ldName, ldImg, ldPrice, ldBase, ldSku := parseJSONLD(htmlContent)
 		if name == "" {
@@ -91,7 +118,7 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 		}
 	}
 
-	// 3. Ekstraksi Tier 3: OpenGraph & Product Meta Tags Fallback
+	// 3. Ekstraksi Tier 3: OpenGraph & Product Meta Tags
 	if name == "" {
 		name = extractMetaContent(htmlContent, "og:title", "twitter:title", "title", "name")
 		if name == "" {
@@ -99,7 +126,6 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 		}
 	}
 
-	// Validasi & Fallback Gambar (Mengatasi URL truncated seperti H&M /small/)
 	if imageURL == "" || strings.HasSuffix(imageURL, "/") {
 		ogImg := extractMetaContent(htmlContent, "og:image", "og:image:secure_url", "twitter:image")
 		if ogImg != "" && !strings.HasSuffix(ogImg, "/") {
@@ -114,6 +140,11 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 		currentPrice = parsePrice(priceStr)
 	}
 
+	// 4. Ekstraksi Tier 4: Fallback Pencarian Regex Harga (Class-based & Embedded Analytics)
+	if currentPrice == 0 {
+		currentPrice, basePrice = extractPriceFromHTMLClasses(htmlContent)
+	}
+
 	if name == "" && currentPrice == 0 {
 		return nil, fmt.Errorf("tidak dapat mengekstrak data produk (nama & harga tidak ditemukan di metadata web)")
 	}
@@ -124,7 +155,7 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 
 	isDiscount := currentPrice < basePrice && currentPrice > 0
 
-	// 4. Platform & Product ID
+	// 5. Platform & Product ID
 	platform := extractPlatform(rawURL, htmlContent)
 	productID := sku
 	if productID == "" {
@@ -143,6 +174,64 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 		URL:          rawURL,
 		CheckedAt:    time.Now(),
 	}, nil
+}
+
+func (s *UniversalScraper) solveAkamaiChallenge(rawURL string, challengeHTML string) (string, error) {
+	reI := regexp.MustCompile(`var\s+i\s*=\s*([0-9]+);`)
+	reJ := regexp.MustCompile(`var\s+j\s*=\s*i\s*\+\s*Number\("([0-9]+)"\s*\+\s*"([0-9]+)"\);`)
+	reVerify := regexp.MustCompile(`"bm-verify":\s*"([^"]+)"`)
+
+	matchI := reI.FindStringSubmatch(challengeHTML)
+	matchJ := reJ.FindStringSubmatch(challengeHTML)
+	matchVerify := reVerify.FindStringSubmatch(challengeHTML)
+
+	if len(matchI) <= 1 || len(matchJ) <= 2 || len(matchVerify) <= 1 {
+		return "", fmt.Errorf("pola challenge tidak cocok")
+	}
+
+	iVal, _ := strconv.ParseInt(matchI[1], 10, 64)
+	numStr := matchJ[1] + matchJ[2]
+	numVal, _ := strconv.ParseInt(numStr, 10, 64)
+	powVal := iVal + numVal
+	bmVerify := matchVerify[1]
+
+	u, _ := url.Parse(rawURL)
+	verifyURL := fmt.Sprintf("%s://%s/_sec/verify?provider=interstitial", u.Scheme, u.Host)
+	payload := map[string]interface{}{
+		"bm-verify": bmVerify,
+		"pow":       powVal,
+	}
+	jsonPayload, _ := json.Marshal(payload)
+
+	postReq, _ := http.NewRequest("POST", verifyURL, bytes.NewBuffer(jsonPayload))
+	postReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+	postReq.Header.Set("Content-Type", "application/json")
+	postReq.Header.Set("Referer", rawURL)
+	postReq.Header.Set("Origin", fmt.Sprintf("%s://%s", u.Scheme, u.Host))
+
+	postResp, err := s.client.Do(postReq)
+	if err != nil {
+		return "", err
+	}
+	postResp.Body.Close()
+
+	// Ambil kembali halaman produk yang sebenarnya setelah verifikasi
+	finalReq, _ := http.NewRequest("GET", rawURL, nil)
+	finalReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+	finalReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+
+	finalResp, err := s.client.Do(finalReq)
+	if err != nil {
+		return "", err
+	}
+	defer finalResp.Body.Close()
+
+	finalBody, err := io.ReadAll(finalResp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(finalBody), nil
 }
 
 func parsePrice(val string) float64 {
@@ -178,6 +267,31 @@ func extractMetaContent(htmlContent string, propertyNames ...string) string {
 		}
 	}
 	return ""
+}
+
+func extractPriceFromHTMLClasses(htmlContent string) (currentPrice float64, basePrice float64) {
+	// 1. Coba cari analytics data (seperti pada Zara: "mainPrice": 1699000)
+	reAnalytics := regexp.MustCompile(`(?i)"mainPrice":\s*([0-9.]+)`)
+	if m := reAnalytics.FindStringSubmatch(htmlContent); len(m) > 1 {
+		p := parsePrice(m[1])
+		if p > 0 {
+			return p, p
+		}
+	}
+
+	// 2. Coba cari span class="price..." atau "money..."
+	rePrice := regexp.MustCompile(`(?i)(?:class="[^"]*(?:price|money|amount)[^"]*"[^>]*>|<span[^>]*class="[^"]*amount[^"]*"[^>]*>)([^<]+)<`)
+	matches := rePrice.FindAllStringSubmatch(htmlContent, -1)
+	for _, m := range matches {
+		txt := strings.TrimSpace(m[1])
+		if strings.Contains(txt, "IDR") || strings.Contains(txt, "Rp") || strings.Contains(txt, ".") || strings.Contains(txt, ",") {
+			p := parsePrice(txt)
+			if p > 1000 {
+				return p, p
+			}
+		}
+	}
+	return 0, 0
 }
 
 func parseNextData(htmlContent string) (name string, img string, currentPrice float64, basePrice float64) {
@@ -252,7 +366,7 @@ func extractFallbackImage(htmlContent string) string {
 	reImg := regexp.MustCompile(`https?://[^"'\s>]+\.(?:jpg|jpeg|png|webp)`)
 	matches := reImg.FindAllString(htmlContent, -1)
 	for _, m := range matches {
-		if strings.Contains(m, "catalog/product/large") || strings.Contains(m, "imagesgoods") || strings.Contains(m, "static-id.zacdn.com/p/") {
+		if strings.Contains(m, "catalog/product/large") || strings.Contains(m, "static.zara.net") || strings.Contains(m, "imagesgoods") || strings.Contains(m, "static-id.zacdn.com/p/") {
 			return m
 		}
 	}
