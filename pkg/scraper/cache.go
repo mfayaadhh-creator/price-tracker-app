@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"price_tracker/internal/domain"
+	"price_tracker/pkg/domain"
 )
 
 type cacheItem struct {

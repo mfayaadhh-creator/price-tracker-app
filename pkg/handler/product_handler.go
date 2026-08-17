@@ -10,11 +10,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"price_tracker/internal/auth"
-	"price_tracker/internal/domain"
-	"price_tracker/internal/repository"
-	"price_tracker/internal/scraper"
-	"price_tracker/internal/service"
+	"price_tracker/pkg/auth"
+	"price_tracker/pkg/domain"
+	"price_tracker/pkg/repository"
+	"price_tracker/pkg/scraper"
+	"price_tracker/pkg/service"
 )
 
 // DTO untuk input request tracking produk baru

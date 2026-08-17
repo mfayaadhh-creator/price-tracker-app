@@ -18,7 +18,7 @@ import (
 	"github.com/bogdanfinn/tls-client/profiles"
 	http "github.com/bogdanfinn/fhttp"
 
-	"price_tracker/internal/domain"
+	"price_tracker/pkg/domain"
 )
 
 type UniversalScraper struct {

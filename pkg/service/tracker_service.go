@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"sync"
 
-	"price_tracker/internal/domain"
-	"price_tracker/internal/repository"
-	"price_tracker/internal/scraper"
+	"price_tracker/pkg/domain"
+	"price_tracker/pkg/repository"
+	"price_tracker/pkg/scraper"
 )
 
 // EvaluationResult menyimpan ringkasan hasil evaluasi cron

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"price_tracker/internal/domain"
+	"price_tracker/pkg/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

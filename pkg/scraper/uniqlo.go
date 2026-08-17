@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"price_tracker/internal/domain"
+	"price_tracker/pkg/domain"
 	"regexp"
 	"strings"
 	"time"

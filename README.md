@@ -53,7 +53,7 @@ price_tracker/
 │       ├── lib/               # Svelte Components (Header, BlockCreator, ProductBlock, Modal, Toast, Icon)
 │       ├── App.svelte         # Main Orchestrator UI
 │       └── main.js
-├── internal/
+├── pkg/
 │   ├── auth/                  # Telegram Deep-Link Auth & Webhook Handler
 │   ├── domain/                # Entity models & interface contracts
 │   ├── handler/               # HTTP Handlers (Chi Router endpoints)

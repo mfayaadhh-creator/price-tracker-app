@@ -12,12 +12,12 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 
-	"price_tracker/internal/auth"
-	"price_tracker/internal/handler"
-	"price_tracker/internal/repository"
-	"price_tracker/internal/scraper"
-	"price_tracker/internal/service"
-	"price_tracker/internal/telegram"
+	"price_tracker/pkg/auth"
+	"price_tracker/pkg/handler"
+	"price_tracker/pkg/repository"
+	"price_tracker/pkg/scraper"
+	"price_tracker/pkg/service"
+	"price_tracker/pkg/telegram"
 )
 
 func main() {

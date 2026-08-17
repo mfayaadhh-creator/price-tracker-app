@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"price_tracker/internal/domain"
+	"price_tracker/pkg/domain"
 )
 
 type TrackerManager struct {
