@@ -29,9 +29,19 @@ Thumbs.db
 
 # Frontend Dependencies & Build
 node_modules/
+frontend/node_modules/
 dist/
+frontend/dist/
 dist-ssr/
 *.local
 
+# Local temp images in root
+botpic-*.jpg
+
+# Logs & Debug
+*.log
+npm-debug.log*
+
+# Markdown rules
 *.md
 !README.md
