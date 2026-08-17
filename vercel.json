@@ -1,0 +1,24 @@
+{
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.go"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api/index.go"
+    },
+    {
+      "source": "/test-scrape",
+      "destination": "/api/index.go"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "0 */2 * * *"
+    }
+  ]
+}
