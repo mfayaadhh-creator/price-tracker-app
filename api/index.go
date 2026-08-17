@@ -47,7 +47,8 @@ func init() {
 			authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot")
 
 			uniqloScraper := scraper.NewUniqloScraper()
-			trackManager := scraper.NewTrackerManager(uniqloScraper)
+			universalScraper := scraper.NewUniversalScraper()
+			trackManager := scraper.NewTrackerManager(uniqloScraper, universalScraper)
 			trackerService := service.NewTrackerService(repo, trackManager, telegramNotifier)
 			productHandler := handler.NewProductHandler(repo, trackManager, trackerService, authManager)
 

@@ -27,8 +27,8 @@
       return;
     }
 
-    if (!url.includes("uniqlo.com")) {
-      formError = "Link harus berupa link produk resmi dari www.uniqlo.com";
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      formError = "Link harus berupa URL web yang valid (dimulai dengan https:// atau http://)";
       return;
     }
 
@@ -57,7 +57,7 @@
       <span>[+]</span> TAMBAH BLOCK BARU
     </div>
     <span class="header-desc font-mono">
-      Tempel link Uniqlo → Sistem otomatis scraping harga live & memantau 24/7
+      Tempel link toko apa saja (Uniqlo, H&M, Zalora, dll) → Auto scraping & pantau 24/7
     </span>
   </div>
 
@@ -66,14 +66,14 @@
     <div class="input-group">
       <label for="product-url" class="input-label font-mono">
         <span class="label-badge font-pixel">URL</span>
-        LINK PRODUK UNIQLO:
+        LINK PRODUK E-COMMERCE (UNIQLO, H&M, ZALORA, DLL):
       </label>
       <div class="input-wrapper">
         <input 
           id="product-url"
           type="url" 
           bind:value={url} 
-          placeholder="https://www.uniqlo.com/id/id/products/E493232-000/00..."
+          placeholder="https://www.uniqlo.com/... atau https://id.hm.com/... atau https://www.zalora.co.id/..."
           class="pixel-input"
           disabled={isSubmitting}
           required
