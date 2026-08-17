@@ -30,7 +30,7 @@ type TelegramAuthManager struct {
 	client   *http.Client
 }
 
-func NewTelegramAuthManager(botToken string, botUser string) *TelegramAuthManager {
+func NewTelegramAuthManager(botToken string, botUser string, webhookURL string) *TelegramAuthManager {
 	if botUser == "" {
 		botUser = "mf_pricetracker_bot"
 	}
@@ -44,12 +44,93 @@ func NewTelegramAuthManager(botToken string, botUser string) *TelegramAuthManage
 		},
 	}
 
-	// Jalankan background listener untuk menangkap /start dari Telegram
+	// Dual-Mode: Jika webhookURL disediakan, daftarkan webhook ke Telegram.
+	// Jika tidak, jalankan background long-polling listener (cocok untuk local dev).
 	if botToken != "" {
-		go mgr.startTelegramUpdateListener()
+		if webhookURL != "" {
+			fullWebhook := strings.TrimRight(webhookURL, "/") + "/api/v1/auth/telegram/webhook"
+			go func() {
+				if err := mgr.SetWebhook(fullWebhook); err != nil {
+					slog.Error("Gagal mendaftarkan Telegram Webhook", "url", fullWebhook, "error", err)
+				} else {
+					slog.Info("🚀 Telegram Webhook berhasil didaftarkan", "url", fullWebhook)
+				}
+			}()
+		} else {
+			go mgr.startTelegramUpdateListener()
+		}
 	}
 
 	return mgr
+}
+
+// SetWebhook mendaftarkan endpoint webhook publik ke Telegram API
+func (m *TelegramAuthManager) SetWebhook(webhookURL string) error {
+	if m.botToken == "" {
+		return fmt.Errorf("bot token kosong")
+	}
+
+	apiURL := fmt.Sprintf("https://api.telegram.org/bot%s/setWebhook?url=%s", m.botToken, webhookURL)
+	resp, err := m.client.Get(apiURL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("telegram setWebhook returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// ProcessTelegramUpdate memproses payload JSON update yang dikirim oleh Telegram via Webhook
+func (m *TelegramAuthManager) ProcessTelegramUpdate(body []byte) (bool, error) {
+	var u struct {
+		UpdateID int `json:"update_id"`
+		Message  struct {
+			Text string `json:"text"`
+			From struct {
+				ID        int64  `json:"id"`
+				FirstName string `json:"first_name"`
+				Username  string `json:"username"`
+			} `json:"from"`
+			Chat struct {
+				ID int64 `json:"id"`
+			} `json:"chat"`
+		} `json:"message"`
+	}
+
+	if err := json.Unmarshal(body, &u); err != nil {
+		return false, err
+	}
+
+	text := strings.TrimSpace(u.Message.Text)
+	if strings.Contains(text, "AUTH_") {
+		parts := strings.Fields(text)
+		for _, part := range parts {
+			if strings.HasPrefix(part, "AUTH_") {
+				authCode := strings.TrimSpace(part)
+				chatID := fmt.Sprintf("%d", u.Message.Chat.ID)
+				firstName := u.Message.From.FirstName
+				username := u.Message.From.Username
+
+				if m.VerifySession(authCode, chatID, firstName, username) {
+					slog.Info("🎉 User berhasil login via Telegram Webhook!", "chat_id", chatID, "name", firstName, "code", authCode)
+
+					replyMsg := fmt.Sprintf(
+						"🎉 <b>Halo %s!</b>\n\n"+
+							"✅ Login ke <b>Price Tracker Web</b> berhasil terverifikasi!\n"+
+							"Silakan kembali ke browser Anda untuk melihat dashboard privat.",
+						firstName,
+					)
+					m.sendReply(chatID, replyMsg)
+					return true, nil
+				}
+				break
+			}
+		}
+	}
+	return false, nil
 }
 
 // CreateLoginSession membuat kode acak baru dan mengembalikan deep link bot Telegram

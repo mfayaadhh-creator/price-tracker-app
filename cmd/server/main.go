@@ -51,8 +51,9 @@ func main() {
 
 	// 2. Scraper, Notifier, Service, Auth & Handler
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	webhookURL := os.Getenv("WEBHOOK_URL")
 	telegramNotifier := telegram.NewTelegramNotifier(botToken)
-	authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot")
+	authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot", webhookURL)
 
 	uniqloScraper := scraper.NewUniqloScraper()
 	universalScraper := scraper.NewUniversalScraper()
@@ -106,9 +107,10 @@ func main() {
 		r.Get("/tracks", productHandler.ListTracks)
 		r.Delete("/tracks/{id}", productHandler.DeleteTrack)
 
-		// Auth Routes
+		// Auth Routes (Dual-Mode: Webhook + Polling)
 		r.Post("/auth/telegram/init", productHandler.InitTelegramAuth)
 		r.Get("/auth/telegram/poll", productHandler.PollTelegramAuth)
+		r.Post("/auth/telegram/webhook", productHandler.TelegramWebhook)
 		r.Post("/auth/instant", productHandler.InstantLogin)
 	})
 

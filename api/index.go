@@ -43,8 +43,9 @@ func init() {
 		repo, err := repository.NewProductRepository(ctx, dbURL)
 		if err == nil {
 			botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+			webhookURL := os.Getenv("WEBHOOK_URL")
 			telegramNotifier := telegram.NewTelegramNotifier(botToken)
-			authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot")
+			authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot", webhookURL)
 
 			uniqloScraper := scraper.NewUniqloScraper()
 			universalScraper := scraper.NewUniversalScraper()
@@ -62,6 +63,7 @@ func init() {
 
 				r.Post("/auth/telegram/init", productHandler.InitTelegramAuth)
 				r.Get("/auth/telegram/poll", productHandler.PollTelegramAuth)
+				r.Post("/auth/telegram/webhook", productHandler.TelegramWebhook)
 				r.Post("/auth/instant", productHandler.InstantLogin)
 			})
 		} else {

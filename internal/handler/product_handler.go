@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -274,5 +275,34 @@ func (h *ProductHandler) InstantLogin(w http.ResponseWriter, r *http.Request) {
 		"user_phone": req.ChatID,
 		"first_name": name,
 		"username":   "",
+	})
+}
+
+// TelegramWebhook menangani POST /api/v1/auth/telegram/webhook (dipanggil langsung oleh server Telegram)
+func (h *ProductHandler) TelegramWebhook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if h.authManager == nil {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "gagal membaca body"})
+		return
+	}
+	defer r.Body.Close()
+
+	handled, err := h.authManager.ProcessTelegramUpdate(body)
+	if err != nil {
+		slog.Warn("Telegram webhook parsing error", "error", err)
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":      true,
+		"handled": handled,
 	})
 }
