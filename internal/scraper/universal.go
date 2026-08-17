@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -29,7 +30,6 @@ func NewUniversalScraper() *UniversalScraper {
 }
 
 func (s *UniversalScraper) CanHandle(rawURL string) bool {
-	// Universal Scraper bisa menangani URL http/https apa pun sebagai fallback
 	return strings.HasPrefix(rawURL, "http://") || strings.HasPrefix(rawURL, "https://")
 }
 
@@ -64,37 +64,67 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 
 	htmlContent := string(bodyBytes)
 
-	// 1. Ekstraksi Tier 1: Schema.org JSON-LD
-	name, imageURL, price, basePrice, sku := parseJSONLD(htmlContent)
+	var name, imageURL string
+	var currentPrice, basePrice float64
+	var sku string
 
-	// 2. Ekstraksi Tier 2: OpenGraph & Meta Tags Fallback
+	// 1. Ekstraksi Tier 1: Next.js __NEXT_DATA__ (Digunakan oleh Zalora, Tokopedia, dll)
+	name, imageURL, currentPrice, basePrice = parseNextData(htmlContent)
+
+	// 2. Ekstraksi Tier 2: Schema.org JSON-LD (Digunakan oleh Shopify, WooCommerce, H&M, dll)
+	if name == "" || currentPrice == 0 {
+		ldName, ldImg, ldPrice, ldBase, ldSku := parseJSONLD(htmlContent)
+		if name == "" {
+			name = ldName
+		}
+		if imageURL == "" {
+			imageURL = ldImg
+		}
+		if currentPrice == 0 {
+			currentPrice = ldPrice
+		}
+		if basePrice == 0 {
+			basePrice = ldBase
+		}
+		if sku == "" {
+			sku = ldSku
+		}
+	}
+
+	// 3. Ekstraksi Tier 3: OpenGraph & Product Meta Tags Fallback
 	if name == "" {
-		name = extractMetaContent(htmlContent, "og:title", "twitter:title")
+		name = extractMetaContent(htmlContent, "og:title", "twitter:title", "title", "name")
 		if name == "" {
 			name = extractTitleTag(htmlContent)
 		}
 	}
 
-	if imageURL == "" {
-		imageURL = extractMetaContent(htmlContent, "og:image", "og:image:secure_url", "twitter:image")
+	// Validasi & Fallback Gambar (Mengatasi URL truncated seperti H&M /small/)
+	if imageURL == "" || strings.HasSuffix(imageURL, "/") {
+		ogImg := extractMetaContent(htmlContent, "og:image", "og:image:secure_url", "twitter:image")
+		if ogImg != "" && !strings.HasSuffix(ogImg, "/") {
+			imageURL = ogImg
+		} else {
+			imageURL = extractFallbackImage(htmlContent)
+		}
 	}
 
-	if price == 0 {
-		priceStr := extractMetaContent(htmlContent, "product:price:amount", "og:price:amount", "price", "twitter:data1")
-		price = parsePrice(priceStr)
+	if currentPrice == 0 {
+		priceStr := extractMetaContent(htmlContent, "product:price:amount", "og:price:amount", "itemprop=\"price\"", "price", "twitter:data1")
+		currentPrice = parsePrice(priceStr)
 	}
 
-	if name == "" && price == 0 {
+	if name == "" && currentPrice == 0 {
 		return nil, fmt.Errorf("tidak dapat mengekstrak data produk (nama & harga tidak ditemukan di metadata web)")
 	}
 
 	if basePrice == 0 {
-		basePrice = price
+		basePrice = currentPrice
 	}
 
-	isDiscount := price < basePrice && price > 0
+	isDiscount := currentPrice < basePrice && currentPrice > 0
 
-	// 3. Platform & Product ID Fallback
+	// 4. Platform & Product ID
 	platform := extractPlatform(rawURL, htmlContent)
 	productID := sku
 	if productID == "" {
@@ -107,7 +137,7 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 		Name:         name,
 		ImageURL:     imageURL,
 		BasePrice:    basePrice,
-		CurrentPrice: price,
+		CurrentPrice: currentPrice,
 		IsDiscount:   isDiscount,
 		IsAvailable:  true,
 		URL:          rawURL,
@@ -136,24 +166,106 @@ func parsePrice(val string) float64 {
 	return f
 }
 
-func extractMetaContent(html string, propertyNames ...string) string {
+func extractMetaContent(htmlContent string, propertyNames ...string) string {
 	for _, prop := range propertyNames {
-		re1 := regexp.MustCompile(`(?i)<meta[^>]+(?:property|name)=["']` + regexp.QuoteMeta(prop) + `["'][^>]+content=["']([^"']*)["']`)
-		if match := re1.FindStringSubmatch(html); len(match) > 1 && strings.TrimSpace(match[1]) != "" {
-			return strings.TrimSpace(match[1])
+		re1 := regexp.MustCompile(`(?i)<meta[^>]+(?:property|name|itemprop)=["']` + regexp.QuoteMeta(prop) + `["'][^>]+content=["']([^"']*)["']`)
+		if match := re1.FindStringSubmatch(htmlContent); len(match) > 1 && strings.TrimSpace(match[1]) != "" {
+			return html.UnescapeString(strings.TrimSpace(match[1]))
 		}
-		re2 := regexp.MustCompile(`(?i)<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']` + regexp.QuoteMeta(prop) + `["']`)
-		if match := re2.FindStringSubmatch(html); len(match) > 1 && strings.TrimSpace(match[1]) != "" {
-			return strings.TrimSpace(match[1])
+		re2 := regexp.MustCompile(`(?i)<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name|itemprop)=["']` + regexp.QuoteMeta(prop) + `["']`)
+		if match := re2.FindStringSubmatch(htmlContent); len(match) > 1 && strings.TrimSpace(match[1]) != "" {
+			return html.UnescapeString(strings.TrimSpace(match[1]))
 		}
 	}
 	return ""
 }
 
-func extractTitleTag(html string) string {
+func parseNextData(htmlContent string) (name string, img string, currentPrice float64, basePrice float64) {
+	reNext := regexp.MustCompile(`(?is)<script[^>]*id=["']__NEXT_DATA__["'][^>]*>(.*?)</script>`)
+	match := reNext.FindStringSubmatch(htmlContent)
+	if len(match) < 2 {
+		return "", "", 0, 0
+	}
+
+	var root map[string]interface{}
+	if err := json.Unmarshal([]byte(match[1]), &root); err != nil {
+		return "", "", 0, 0
+	}
+
+	prodMap := findProductMap(root)
+	if prodMap != nil {
+		if title, ok := prodMap["title"].(string); ok && title != "" {
+			name = html.UnescapeString(title)
+		} else if n, ok := prodMap["name"].(string); ok && n != "" {
+			name = html.UnescapeString(n)
+		}
+
+		if imgStr, ok := prodMap["image"].(string); ok && imgStr != "" {
+			img = imgStr
+		}
+
+		if sp, exists := prodMap["SpecialPrice"]; exists {
+			currentPrice = parsePrice(fmt.Sprintf("%v", sp))
+		}
+		if p, exists := prodMap["Price"]; exists {
+			basePrice = parsePrice(fmt.Sprintf("%v", p))
+			if currentPrice == 0 {
+				currentPrice = basePrice
+			}
+		} else if p, exists := prodMap["price"]; exists {
+			basePrice = parsePrice(fmt.Sprintf("%v", p))
+			if currentPrice == 0 {
+				currentPrice = basePrice
+			}
+		}
+	}
+
+	return name, img, currentPrice, basePrice
+}
+
+func findProductMap(v interface{}) map[string]interface{} {
+	if m, ok := v.(map[string]interface{}); ok {
+		if _, hasProductKey := m["SpecialPrice"]; hasProductKey {
+			return m
+		}
+		if _, hasProductKey := m["price"]; hasProductKey {
+			if _, hasTitle := m["title"]; hasTitle {
+				return m
+			}
+		}
+		for _, child := range m {
+			if res := findProductMap(child); res != nil {
+				return res
+			}
+		}
+	} else if arr, ok := v.([]interface{}); ok {
+		for _, child := range arr {
+			if res := findProductMap(child); res != nil {
+				return res
+			}
+		}
+	}
+	return nil
+}
+
+func extractFallbackImage(htmlContent string) string {
+	reImg := regexp.MustCompile(`https?://[^"'\s>]+\.(?:jpg|jpeg|png|webp)`)
+	matches := reImg.FindAllString(htmlContent, -1)
+	for _, m := range matches {
+		if strings.Contains(m, "catalog/product/large") || strings.Contains(m, "imagesgoods") || strings.Contains(m, "static-id.zacdn.com/p/") {
+			return m
+		}
+	}
+	if len(matches) > 0 {
+		return matches[0]
+	}
+	return ""
+}
+
+func extractTitleTag(htmlContent string) string {
 	re := regexp.MustCompile(`(?i)<title[^>]*>(.*?)</title>`)
-	if match := re.FindStringSubmatch(html); len(match) > 1 {
-		t := strings.TrimSpace(match[1])
+	if match := re.FindStringSubmatch(htmlContent); len(match) > 1 {
+		t := strings.TrimSpace(html.UnescapeString(match[1]))
 		if idx := strings.Index(t, " | "); idx != -1 {
 			t = t[:idx]
 		} else if idx := strings.Index(t, " - "); idx != -1 {
@@ -164,8 +276,8 @@ func extractTitleTag(html string) string {
 	return ""
 }
 
-func extractPlatform(rawURL string, html string) string {
-	siteName := extractMetaContent(html, "og:site_name", "twitter:site")
+func extractPlatform(rawURL string, htmlContent string) string {
+	siteName := extractMetaContent(htmlContent, "og:site_name", "twitter:site")
 	if siteName != "" {
 		return strings.ToUpper(siteName)
 	}
@@ -177,7 +289,11 @@ func extractPlatform(rawURL string, html string) string {
 	host := strings.TrimPrefix(u.Hostname(), "www.")
 	parts := strings.Split(host, ".")
 	if len(parts) > 0 && parts[0] != "" {
-		return strings.ToUpper(parts[0])
+		p := parts[0]
+		if p == "id" && len(parts) > 1 {
+			p = parts[1]
+		}
+		return strings.ToUpper(p)
 	}
 	return "E-COMMERCE"
 }
@@ -194,9 +310,9 @@ func generateProductIDFromURL(rawURL string) string {
 	return hex.EncodeToString(hash[:])[:8]
 }
 
-func parseJSONLD(html string) (name string, img string, price float64, basePrice float64, sku string) {
+func parseJSONLD(htmlContent string) (name string, img string, price float64, basePrice float64, sku string) {
 	reScript := regexp.MustCompile(`(?is)<script[^>]*type=["']application/ld\+json["'][^>]*>(.*?)</script>`)
-	matches := reScript.FindAllStringSubmatch(html, -1)
+	matches := reScript.FindAllStringSubmatch(htmlContent, -1)
 
 	for _, m := range matches {
 		if len(m) < 2 {
@@ -239,7 +355,9 @@ func extractFromMap(m map[string]interface{}) (name string, img string, price fl
 		return "", "", 0, 0, ""
 	}
 
-	name, _ = m["name"].(string)
+	if n, ok := m["name"].(string); ok {
+		name = html.UnescapeString(n)
+	}
 	if s, ok := m["sku"].(string); ok {
 		sku = s
 	}
