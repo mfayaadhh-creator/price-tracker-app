@@ -5,6 +5,7 @@
   import ProductBlock from "./lib/ProductBlock.svelte";
   import Toast from "./lib/Toast.svelte";
   import AuthModal from "./lib/AuthModal.svelte";
+  import AboutModal from "./lib/AboutModal.svelte";
   import ImagePreviewModal from "./lib/ImagePreviewModal.svelte";
   import Icon from "./lib/Icon.svelte";
 
@@ -15,6 +16,7 @@
   let searchQuery = "";
   let toasts = [];
   let isAuthModalOpen = false;
+  let isAboutModalOpen = false;
   let currentUser = null;
   let previewImageData = null;
 
@@ -243,6 +245,7 @@
     {currentUser}
     onOpenLogin={() => isAuthModalOpen = true}
     onLogout={handleLogout}
+    onOpenAbout={() => isAboutModalOpen = true}
   />
 
   <main class="main-content">
@@ -251,13 +254,13 @@
       <div class="hero-content">
         <div class="hero-badge font-pixel">
           <Icon name="tag" size={13} color="#FF5722" strokeWidth={2.2} />
-          <span>MULTI-STORE PRICE TRACKER v2.0</span>
+          <span>UNIVERSAL E-COMMERCE PRICE TRACKER v2.0</span>
         </div>
         <h1 class="hero-title font-display">
-          PANTAU DISKON FASHION DENGAN <span class="highlight-text">MODULAR BLOCKS</span>
+          PANTAU HARGA & DISKON E-COMMERCE DENGAN <span class="highlight-text">MODULAR BLOCKS</span>
         </h1>
         <p class="hero-desc font-mono">
-          Tambahkan link produk dari toko favorit Anda (Uniqlo, Zara, Zalora, H&M, dll). Setiap kali sistem mendeteksi penurunan harga atau diskon baru, bot Telegram kami akan langsung mengirimkan pesan ke HP Anda!
+          Pantau penurunan harga laptop, gadget, pakaian, dan barang impian Anda dari toko online mana saja (Agres.id, Uniqlo, Zara, Zalora, H&M, dll) secara otomatis 24/7. Notifikasi instan langsung dikirim ke Telegram Anda saat harga turun!
         </p>
 
         <!-- Quick 3-Step Guide -->
@@ -268,11 +271,11 @@
           </div>
           <div class="step-card">
             <span class="step-num font-pixel">02</span>
-            <span class="step-text">Input Link Produk Toko Favorit Anda</span>
+            <span class="step-text">Tempel Link Produk (Elektronik, Fashion, dll)</span>
           </div>
           <div class="step-card">
             <span class="step-num font-pixel">03</span>
-            <span class="step-text">Sistem Memantau 24/7 & Kirim Alert Diskon</span>
+            <span class="step-text">Sistem Pantau 24/7 & Kirim Alert Diskon</span>
           </div>
         </div>
       </div>
@@ -285,6 +288,26 @@
         {isSubmitting}
         {currentUser}
       />
+
+      <!-- Supported Store Categories Ticker -->
+      <div class="category-pills font-mono">
+        <span class="category-pill">
+          <Icon name="laptop" size={13} color="#FF5722" />
+          <span>LAPTOP & ELEKTRONIK (AGRES.ID, DLL)</span>
+        </span>
+        <span class="category-pill">
+          <Icon name="tag" size={13} color="#00E676" />
+          <span>FASHION (UNIQLO, ZARA, H&M)</span>
+        </span>
+        <span class="category-pill">
+          <Icon name="shopping-bag" size={13} color="#3B82F6" />
+          <span>SNEAKERS & SEPATU (ZALORA)</span>
+        </span>
+        <span class="category-pill">
+          <Icon name="package" size={13} color="#A855F7" />
+          <span>SHOPIFY & ONLINE STORES</span>
+        </span>
+      </div>
     </section>
 
     <!-- Tracked Products Grid Section -->
@@ -328,7 +351,7 @@
           </div>
           <h3 class="empty-title font-display">Belum Ada Block Produk yang Dipantau</h3>
           <p class="empty-desc font-mono">
-            Salin link produk dari website toko favorit Anda (Uniqlo, Zara, Zalora, H&M, dll) dan masukkan pada form di atas untuk memulai pemantauan harga otomatis!
+            Salin link produk dari website toko favorit Anda (Agres.id, Uniqlo, Zara, Zalora, H&M, dll) dan masukkan pada form di atas untuk memulai pemantauan harga otomatis!
           </p>
         </div>
 
@@ -373,8 +396,37 @@
     onLoginSuccess={handleLoginSuccess} 
   />
 
+  <!-- About & How It Works Modal -->
+  <AboutModal 
+    isOpen={isAboutModalOpen} 
+    onClose={() => isAboutModalOpen = false} 
+  />
+
   <!-- Floating Toast Feedback System -->
   <Toast {toasts} onRemove={removeToast} />
+
+  <!-- Neo-Brutalist Technical Footer -->
+  <footer class="app-footer font-mono">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="font-pixel footer-title">PRICE_TRACKER v2.0</span>
+        <span class="footer-tagline">// High-Performance Multi-Store Price Monitor & Telegram Dispatcher</span>
+      </div>
+      <div class="footer-meta">
+        <span>Go + Svelte + Supabase</span>
+        <span class="footer-divider">•</span>
+        <a href="https://github.com/mfayaadhh-creator/price-tracker-app" target="_blank" rel="noopener noreferrer" class="footer-link">
+          <Icon name="github" size={13} />
+          <span>GitHub</span>
+        </a>
+        <span class="footer-divider">•</span>
+        <a href="https://t.me/mf_pricetracker_bot" target="_blank" rel="noopener noreferrer" class="footer-link">
+          <Icon name="send" size={13} color="var(--accent-blue)" />
+          <span>@mf_pricetracker_bot</span>
+        </a>
+      </div>
+    </div>
+  </footer>
 </div>
 
 <style>
@@ -555,6 +607,91 @@
     100% { transform: rotate(360deg); }
   }
 
+  .creator-section {
+    margin-bottom: 32px;
+  }
+
+  .category-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .category-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-main);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.06);
+  }
+
+  .app-footer {
+    background-color: var(--bg-card);
+    border-top: 2px solid var(--border-color);
+    padding: 24px 20px;
+    margin-top: auto;
+  }
+
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .footer-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .footer-tagline {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+  }
+
+  .footer-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-main);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .footer-link:hover {
+    color: var(--accent-orange);
+    text-decoration: underline;
+  }
+
+  .footer-divider {
+    color: #CBD5E1;
+  }
+
   @media (max-width: 768px) {
     .main-content {
       padding: 20px 14px 60px 14px;
@@ -572,6 +709,11 @@
     .search-input {
       width: 100%;
       min-width: 100%;
+    }
+
+    .footer-inner {
+      flex-direction: column;
+      align-items: flex-start;
     }
   }
 </style>

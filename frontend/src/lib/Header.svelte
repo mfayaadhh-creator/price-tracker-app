@@ -7,7 +7,9 @@
   export let currentUser = null;
   export let onOpenLogin;
   export let onLogout;
+  export let onOpenAbout;
 
+  const githubUrl = "https://github.com/mfayaadhh-creator/price-tracker-app";
   const botUrl = "https://t.me/mf_pricetracker_bot";
 </script>
 
@@ -21,21 +23,52 @@
         <span class="version-tag">v2.0</span>
       </div>
       <p class="brand-subtitle font-mono">
-        // MULTI-STORE PRICE TRACKER & REAL-TIME TELEGRAM ALERT ENGINE
+        // UNIVERSAL E-COMMERCE PRICE MONITOR & AUTOMATED TELEGRAM ALERTS
       </p>
     </div>
 
     <!-- Actions & Stats -->
     <div class="actions-group">
+      <!-- Nav Links -->
+      <div class="nav-links font-mono">
+        <button 
+          type="button" 
+          class="nav-btn" 
+          on:click={onOpenAbout} 
+          title="Pelajari cara kerja & website yang didukung"
+        >
+          <Icon name="info" size={13} />
+          <span>INFO</span>
+        </button>
+
+        <a 
+          href={githubUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          class="nav-btn" 
+          title="Lihat source code di GitHub"
+        >
+          <Icon name="github" size={13} />
+          <span>GITHUB</span>
+        </a>
+
+        <a 
+          href={botUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          class="nav-btn nav-btn-tg" 
+          title="Buka Bot Telegram Resmi"
+        >
+          <Icon name="send" size={13} color="var(--accent-blue)" />
+          <span>BOT TG</span>
+        </a>
+      </div>
+
       <!-- Status Ticker -->
       <div class="status-ticker font-mono">
         <span class="ticker-item">
           <span class="dot-green"></span>
           TRACKED: <strong>{totalTracks}</strong>
-        </span>
-        <span class="ticker-divider">/</span>
-        <span class="ticker-item">
-          BOT: <strong>ACTIVE</strong>
         </span>
       </div>
 
@@ -64,7 +97,7 @@
           title="Masuk menggunakan akun Telegram Anda"
         >
           <Icon name="lock" size={14} color="#00E676" />
-          <span>LOGIN VIA TELEGRAM</span>
+          <span>LOGIN TG</span>
         </button>
       {/if}
 
@@ -76,7 +109,7 @@
         title="Jalankan evaluasi harga ke seluruh produk"
       >
         <Icon name="refresh" size={14} className={isSyncing ? "spin-icon" : ""} />
-        <span>{isSyncing ? "SYNCING..." : "SYNC CRON"}</span>
+        <span>{isSyncing ? "SYNCING..." : "SYNC"}</span>
       </button>
     </div>
   </div>
@@ -150,8 +183,45 @@
   .actions-group {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background-color: var(--bg-canvas);
+    border: 2px solid var(--border-color);
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px var(--border-color);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .nav-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0px var(--border-color);
+    background-color: #FFFFFF;
+  }
+
+  .nav-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0px var(--border-color);
+  }
+
+  .nav-btn-tg {
+    background-color: var(--accent-blue-light);
   }
 
   .status-ticker {
@@ -177,10 +247,6 @@
     background-color: var(--accent-green);
     border-radius: 0;
     border: 1px solid var(--border-color);
-  }
-
-  .ticker-divider {
-    color: #A1A1AA;
   }
 
   .user-profile-badge {

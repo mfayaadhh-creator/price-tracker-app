@@ -59,7 +59,7 @@
       <Icon name="plus" size={14} color="#FF5722" strokeWidth={2.5} /> TAMBAH BLOCK BARU
     </div>
     <span class="header-desc font-mono">
-      Tempel link toko apa saja (Uniqlo, Zara, Zalora, H&M, dll) → Auto scraping & pantau 24/7
+      Tempel link produk online apa saja (Laptop, Elektronik, Fashion, dll) → Auto scraping & pantau 24/7
     </span>
   </div>
 
@@ -68,14 +68,14 @@
     <div class="input-group">
       <label for="product-url" class="input-label font-mono">
         <span class="label-badge font-pixel">URL</span>
-        LINK PRODUK E-COMMERCE (UNIQLO, ZARA, ZALORA, H&M, DLL):
+        LINK PRODUK E-COMMERCE (AGRES.ID, UNIQLO, ZARA, ZALORA, H&M, DLL):
       </label>
       <div class="input-wrapper">
         <input 
           id="product-url"
           type="url" 
           bind:value={url} 
-          placeholder="https://www.uniqlo.com/... atau https://www.zara.com/... atau https://www.zalora.co.id/..."
+          placeholder="https://www.agres.id/... atau https://www.uniqlo.com/... atau https://www.zara.com/..."
           class="pixel-input"
           disabled={isSubmitting}
           required
