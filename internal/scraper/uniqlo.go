@@ -54,6 +54,21 @@ type uqProduct struct {
 	Name      string   `json:"name"`
 	ProductID string   `json:"productId"`
 	Prices    uqPrices `json:"prices"`
+	Images    struct {
+		Main map[string]struct {
+			Image string `json:"image"`
+			URL   string `json:"url"`
+		} `json:"main"`
+		Sub []struct {
+			Image string `json:"image"`
+			URL   string `json:"url"`
+		} `json:"sub"`
+	} `json:"images"`
+	Representative struct {
+		Color struct {
+			DisplayCode string `json:"displayCode"`
+		} `json:"color"`
+	} `json:"representative"`
 }
 
 type uqProductWrapper struct {
@@ -168,10 +183,33 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 
 	isDiscount := currentPrice < basePrice && currentPrice > 0
 
+	// Ekstrak Foto Produk Resmi Uniqlo
+	imageURL := ""
+	repColor := prod.Representative.Color.DisplayCode
+	if repColor != "" && prod.Images.Main != nil {
+		if imgObj, ok := prod.Images.Main[repColor]; ok && imgObj.Image != "" {
+			imageURL = imgObj.Image
+		}
+	}
+
+	if imageURL == "" && prod.Images.Main != nil {
+		for _, imgObj := range prod.Images.Main {
+			if imgObj.Image != "" {
+				imageURL = imgObj.Image
+				break
+			}
+		}
+	}
+
+	if imageURL == "" && len(prod.Images.Sub) > 0 {
+		imageURL = prod.Images.Sub[0].Image
+	}
+
 	return &domain.ProductInfo{
 		Platform:     "Uniqlo",
 		ProductID:    productID,
 		Name:         prod.Name,
+		ImageURL:     imageURL,
 		BasePrice:    basePrice,
 		CurrentPrice: currentPrice,
 		IsDiscount:   isDiscount,

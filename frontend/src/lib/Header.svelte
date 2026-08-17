@@ -2,6 +2,9 @@
   export let totalTracks = 0;
   export let isSyncing = false;
   export let onSync;
+  export let currentUser = null;
+  export let onOpenLogin;
+  export let onLogout;
 
   const botUrl = "https://t.me/mf_pricetracker_bot";
 </script>
@@ -34,18 +37,34 @@
         </span>
       </div>
 
-      <!-- Telegram Direct Link Button -->
-      <a 
-        href={botUrl} 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        class="pixel-btn pixel-btn-blue font-mono"
-        title="Buka bot di aplikasi Telegram"
-      >
-        <span>🤖</span>
-        <span>BUKA BOT TELEGRAM</span>
-        <span class="arrow-icon">↗</span>
-      </a>
+      <!-- Auth Action Button (Login or User Profile) -->
+      {#if currentUser}
+        <div class="user-profile-badge font-mono">
+          <span class="user-avatar">👤</span>
+          <span class="user-name">
+            <strong>{currentUser.first_name || "User"}</strong>
+            <small>({currentUser.user_phone})</small>
+          </span>
+          <button 
+            type="button" 
+            class="logout-btn" 
+            on:click={onLogout}
+            title="Keluar dari akun"
+          >
+            [LOGOUT]
+          </button>
+        </div>
+      {:else}
+        <button 
+          type="button" 
+          class="pixel-btn pixel-btn-dark font-mono"
+          on:click={onOpenLogin}
+          title="Masuk menggunakan akun Telegram Anda"
+        >
+          <span>🔐</span>
+          <span>LOGIN VIA TELEGRAM</span>
+        </button>
+      {/if}
 
       <!-- Manual Cron Trigger Button -->
       <button 
@@ -55,7 +74,7 @@
         title="Jalankan evaluasi harga ke seluruh produk"
       >
         <span>⚡</span>
-        <span>{isSyncing ? "MENGECEK HARGA..." : "SYNC HARGA SEKARANG"}</span>
+        <span>{isSyncing ? "SYNCING..." : "SYNC CRON"}</span>
       </button>
     </div>
   </div>
@@ -162,8 +181,46 @@
     color: #A1A1AA;
   }
 
-  .arrow-icon {
-    font-size: 0.95rem;
+  .user-profile-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--accent-blue-light);
+    border: 2px solid var(--border-color);
+    padding: 6px 12px;
+    box-shadow: 2px 2px 0px var(--border-color);
+    font-size: 0.8rem;
+  }
+
+  .user-avatar {
+    font-size: 1rem;
+  }
+
+  .user-name {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .user-name small {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+
+  .logout-btn {
+    background: transparent;
+    border: none;
+    color: #DC2626;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 0.75rem;
+    cursor: pointer;
+    margin-left: 4px;
+    padding: 2px 4px;
+  }
+
+  .logout-btn:hover {
+    text-decoration: underline;
   }
 
   @media (max-width: 768px) {

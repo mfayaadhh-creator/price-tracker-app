@@ -8,8 +8,11 @@
   export let onDragStart;
   export let onDragOver;
   export let onDrop;
+  export let onPreviewImage = () => {};
 
   let isDeleting = false;
+  let isDragging = false;
+  let isDragOver = false;
 
   function formatIDR(amount) {
     if (!amount && amount !== 0) return "Rp 0";
@@ -35,17 +38,44 @@
     }
   }
 
+  function handleInternalDragStart(e) {
+    isDragging = true;
+    onDragStart(e, index);
+  }
+
+  function handleInternalDragEnd() {
+    isDragging = false;
+    isDragOver = false;
+  }
+
+  function handleInternalDragOver(e) {
+    onDragOver(e, index);
+    isDragOver = true;
+  }
+
+  function handleInternalDragLeave() {
+    isDragOver = false;
+  }
+
+  function handleInternalDrop(e) {
+    isDragOver = false;
+    isDragging = false;
+    onDrop(e, index);
+  }
+
   $: savings = calculateSavings(product.base_price, product.last_price);
   $: hasDiscount = product.is_discount || (product.base_price > product.last_price);
 </script>
 
 <article 
-  class="product-block pixel-box"
+  class="product-block pixel-box {isDragging ? 'is-dragging' : ''} {isDragOver ? 'is-drag-over' : ''}"
   aria-label={product.name}
   draggable="true"
-  on:dragstart={(e) => onDragStart(e, index)}
-  on:dragover={(e) => onDragOver(e, index)}
-  on:drop={(e) => onDrop(e, index)}
+  on:dragstart={handleInternalDragStart}
+  on:dragend={handleInternalDragEnd}
+  on:dragover={handleInternalDragOver}
+  on:dragleave={handleInternalDragLeave}
+  on:drop={handleInternalDrop}
 >
   <!-- Block Header Bar -->
   <div class="block-header">
@@ -96,24 +126,53 @@
 
   <!-- Block Body -->
   <div class="block-body">
-    <!-- Product Name -->
-    <h3 class="product-title font-display" title={product.name}>
-      {product.name}
-    </h3>
-
-    <!-- Product Metadata Badges -->
-    <div class="meta-badges">
-      <span class="pixel-tag pixel-tag-orange font-mono">
-        ID: {product.product_id || "N/A"}
-      </span>
-      <span class="pixel-tag pixel-tag-blue font-mono" title="Notifikasi dikirim ke Chat ID ini">
-        📱 TG: {product.user_phone}
-      </span>
-      {#if product.target_price > 0}
-        <span class="pixel-tag pixel-tag-green font-mono">
-          🎯 TARGET: {formatIDR(product.target_price)}
-        </span>
+    <!-- Product Showcase: Image & Meta Info -->
+    <div class="product-showcase">
+      {#if product.image_url}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div 
+          class="image-wrapper" 
+          role="button" 
+          tabindex="0"
+          on:click={() => onPreviewImage(product)} 
+          title="Klik untuk melihat foto ukuran penuh (HD)"
+        >
+          <img 
+            src={product.image_url} 
+            alt={product.name} 
+            loading="lazy" 
+            class="product-image"
+          />
+          <span class="zoom-badge font-mono">🔍 HD</span>
+        </div>
+      {:else}
+        <div class="image-placeholder font-pixel">
+          <span>👕</span>
+        </div>
       {/if}
+
+      <div class="info-group">
+        <!-- Product Name -->
+        <h3 class="product-title font-display" title={product.name}>
+          {product.name}
+        </h3>
+
+        <!-- Product Metadata Badges -->
+        <div class="meta-badges">
+          <span class="pixel-tag pixel-tag-orange font-mono">
+            ID: {product.product_id || "N/A"}
+          </span>
+          <span class="pixel-tag pixel-tag-blue font-mono" title="Notifikasi dikirim ke Chat ID ini">
+            📱 TG: {product.user_phone}
+          </span>
+          {#if product.target_price > 0}
+            <span class="pixel-tag pixel-tag-green font-mono">
+              🎯 TARGET: {formatIDR(product.target_price)}
+            </span>
+          {/if}
+        </div>
+      </div>
     </div>
 
     <!-- Pricing Showcase Box -->
@@ -172,10 +231,29 @@
     cursor: grab;
     user-select: none;
     border-radius: 0;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease, box-shadow 0.18s ease;
   }
 
   .product-block:active {
     cursor: grabbing;
+  }
+
+  /* Award-Winning Translucent Ghost Effect saat Di-Hold / Di-Drag */
+  .product-block.is-dragging {
+    opacity: 0.28 !important;
+    transform: scale(0.96) rotate(-1.2deg) !important;
+    filter: grayscale(35%) !important;
+    border-style: dashed !important;
+    border-color: var(--accent-orange) !important;
+    box-shadow: none !important;
+  }
+
+  /* Magnetic Drop Slot Indicator */
+  .product-block.is-drag-over {
+    transform: scale(1.025) translateY(-3px) !important;
+    border-color: var(--accent-orange) !important;
+    background-color: #FFFDF5 !important;
+    box-shadow: 0 0 0 3px var(--accent-orange), var(--shadow-lg) !important;
   }
 
   .block-header {
@@ -259,8 +337,86 @@
     gap: 14px;
   }
 
+  .product-showcase {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .image-wrapper {
+    width: 80px;
+    height: 100px;
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+    background-color: #FAFAFA;
+    box-shadow: 2px 2px 0px var(--border-color);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: zoom-in;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .image-wrapper:hover {
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0px var(--border-color);
+  }
+
+  .zoom-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background-color: rgba(24, 24, 27, 0.85);
+    color: #FFFFFF;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border: 1px solid var(--border-color);
+    opacity: 0.85;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+  }
+
+  .image-wrapper:hover .zoom-badge {
+    opacity: 1;
+    background-color: var(--accent-orange);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.25s ease;
+  }
+
+  .image-wrapper:hover .product-image {
+    transform: scale(1.08);
+  }
+
+  .image-placeholder {
+    width: 80px;
+    height: 100px;
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-canvas-subtle);
+    box-shadow: 2px 2px 0px var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+  }
+
+  .info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
   .product-title {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 700;
     line-height: 1.35;
     color: var(--text-main);
@@ -268,7 +424,6 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    min-height: 2.7em;
   }
 
   .meta-badges {

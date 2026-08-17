@@ -1,11 +1,16 @@
 <script>
   export let onAddProduct;
   export let isSubmitting = false;
+  export let currentUser = null;
 
   let url = "";
-  let userPhone = "7514771766"; // Default Chat ID
+  let userPhone = "7514771766";
   let targetPrice = "";
   let formError = "";
+
+  $: if (currentUser && currentUser.user_phone) {
+    userPhone = currentUser.user_phone;
+  }
 
   const sampleUrl = "https://www.uniqlo.com/id/id/products/E493232-000/00?colorDisplayCode=00&sizeDisplayCode=004";
 

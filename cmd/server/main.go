@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 
+	"price_tracker/internal/auth"
 	"price_tracker/internal/handler"
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
@@ -48,18 +49,29 @@ func main() {
 	defer repo.Close()
 	slog.Info("Berhasil terhubung ke Database Supabase")
 
-	// 2. Scraper, Notifier, Service & Handler
+	// 2. Scraper, Notifier, Service, Auth & Handler
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	telegramNotifier := telegram.NewTelegramNotifier(botToken)
+	authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot")
 
 	uniqloScraper := scraper.NewUniqloScraper()
 	trackManager := scraper.NewTrackerManager(uniqloScraper)
 	trackerService := service.NewTrackerService(repo, trackManager, telegramNotifier)
-	productHandler := handler.NewProductHandler(repo, trackManager, trackerService)
+	productHandler := handler.NewProductHandler(repo, trackManager, trackerService, authManager)
 
 	// 3. Router
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	
+	// Logger yang otomatis mengabaikan log polling /poll agar terminal tetap bersih
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/auth/telegram/poll" {
+				next.ServeHTTP(w, r)
+				return
+			}
+			middleware.Logger(next).ServeHTTP(w, r)
+		})
+	})
 	r.Use(middleware.Recoverer)
 
 	// CORS Middleware untuk Frontend Svelte
@@ -92,6 +104,11 @@ func main() {
 		r.Post("/track", productHandler.AddTrack)
 		r.Get("/tracks", productHandler.ListTracks)
 		r.Delete("/tracks/{id}", productHandler.DeleteTrack)
+
+		// Auth Routes
+		r.Post("/auth/telegram/init", productHandler.InitTelegramAuth)
+		r.Get("/auth/telegram/poll", productHandler.PollTelegramAuth)
+		r.Post("/auth/instant", productHandler.InstantLogin)
 	})
 
 	// 4. Server Start

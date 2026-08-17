@@ -4,6 +4,8 @@
   import BlockCreator from "./lib/BlockCreator.svelte";
   import ProductBlock from "./lib/ProductBlock.svelte";
   import Toast from "./lib/Toast.svelte";
+  import AuthModal from "./lib/AuthModal.svelte";
+  import ImagePreviewModal from "./lib/ImagePreviewModal.svelte";
 
   let products = [];
   let isLoading = true;
@@ -11,6 +13,9 @@
   let isSyncing = false;
   let searchQuery = "";
   let toasts = [];
+  let isAuthModalOpen = false;
+  let currentUser = null;
+  let previewImageData = null;
 
   // Drag & drop state
   let draggedIndex = null;
@@ -30,7 +35,12 @@
   async function fetchProducts() {
     isLoading = true;
     try {
-      const res = await fetch("/api/v1/tracks");
+      let endpoint = "/api/v1/tracks";
+      if (currentUser && currentUser.user_phone) {
+        endpoint += `?chat_id=${encodeURIComponent(currentUser.user_phone)}`;
+      }
+
+      const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Gagal mengambil data produk");
       const data = await res.json();
       products = data.data || [];
@@ -40,6 +50,20 @@
     } finally {
       isLoading = false;
     }
+  }
+
+  function handleLoginSuccess(user) {
+    currentUser = user;
+    localStorage.setItem("pt_auth_user", JSON.stringify(user));
+    showToast(`🎉 Selamat datang kembali, ${user.first_name}!`, "success");
+    fetchProducts();
+  }
+
+  function handleLogout() {
+    currentUser = null;
+    localStorage.removeItem("pt_auth_user");
+    showToast("Anda telah keluar dari akun.", "info");
+    fetchProducts();
   }
 
   async function handleAddProduct(payload) {
@@ -133,7 +157,6 @@
     updated.splice(targetIndex, 0, movedItem);
     products = updated;
     draggedIndex = null;
-    showToast("⠿ Urutan Block berhasil dipindah!", "info");
   }
 
   function handleMoveLeft(index) {
@@ -165,6 +188,14 @@
   });
 
   onMount(() => {
+    try {
+      const savedUser = localStorage.getItem("pt_auth_user");
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+      }
+    } catch (e) {
+      console.error("Gagal load user dari localStorage:", e);
+    }
     fetchProducts();
   });
 </script>
@@ -174,7 +205,10 @@
   <Header 
     totalTracks={products.length} 
     {isSyncing} 
-    onSync={handleSyncCron} 
+    onSync={handleSyncCron}
+    {currentUser}
+    onOpenLogin={() => isAuthModalOpen = true}
+    onLogout={handleLogout}
   />
 
   <main class="main-content">
@@ -195,11 +229,11 @@
         <div class="steps-grid font-mono">
           <div class="step-card">
             <span class="step-num font-pixel">01</span>
-            <span class="step-text">Buka Bot di Telegram & Tekan <strong>/start</strong></span>
+            <span class="step-text">Login via Telegram untuk Dashboard Privat</span>
           </div>
           <div class="step-card">
             <span class="step-num font-pixel">02</span>
-            <span class="step-text">Input Link Produk Uniqlo & Chat ID Anda</span>
+            <span class="step-text">Input Link Produk Uniqlo Favorit Anda</span>
           </div>
           <div class="step-card">
             <span class="step-num font-pixel">03</span>
@@ -213,7 +247,8 @@
     <section class="creator-section">
       <BlockCreator 
         onAddProduct={handleAddProduct} 
-        {isSubmitting} 
+        {isSubmitting}
+        {currentUser}
       />
     </section>
 
@@ -278,6 +313,7 @@
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
+                onPreviewImage={(prod) => previewImageData = prod}
               />
             {/each}
           </div>
@@ -285,6 +321,19 @@
       {/if}
     </section>
   </main>
+
+  <!-- Image Preview Lightbox Modal -->
+  <ImagePreviewModal 
+    data={previewImageData} 
+    onClose={() => previewImageData = null} 
+  />
+
+  <!-- Auth Modal -->
+  <AuthModal 
+    isOpen={isAuthModalOpen} 
+    onClose={() => isAuthModalOpen = false} 
+    onLoginSuccess={handleLoginSuccess} 
+  />
 
   <!-- Floating Toast Feedback System -->
   <Toast {toasts} onRemove={removeToast} />

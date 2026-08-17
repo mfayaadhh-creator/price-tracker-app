@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"price_tracker/internal/auth"
 	"price_tracker/internal/handler"
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
@@ -43,11 +44,12 @@ func init() {
 		if err == nil {
 			botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 			telegramNotifier := telegram.NewTelegramNotifier(botToken)
+			authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot")
 
 			uniqloScraper := scraper.NewUniqloScraper()
 			trackManager := scraper.NewTrackerManager(uniqloScraper)
 			trackerService := service.NewTrackerService(repo, trackManager, telegramNotifier)
-			productHandler := handler.NewProductHandler(repo, trackManager, trackerService)
+			productHandler := handler.NewProductHandler(repo, trackManager, trackerService, authManager)
 
 			r.Get("/test-scrape", productHandler.TestScrape)
 			r.Get("/api/cron", productHandler.CronEvaluate)
@@ -56,6 +58,10 @@ func init() {
 				r.Post("/track", productHandler.AddTrack)
 				r.Get("/tracks", productHandler.ListTracks)
 				r.Delete("/tracks/{id}", productHandler.DeleteTrack)
+
+				r.Post("/auth/telegram/init", productHandler.InitTelegramAuth)
+				r.Get("/auth/telegram/poll", productHandler.PollTelegramAuth)
+				r.Post("/auth/instant", productHandler.InstantLogin)
 			})
 		} else {
 			slog.Error("Gagal inisialisasi DB di Vercel", "error", err)

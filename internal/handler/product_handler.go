@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"price_tracker/internal/auth"
 	"price_tracker/internal/domain"
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
@@ -21,19 +22,26 @@ type TrackRequest struct {
 	TargetPrice float64 `json:"target_price"`
 }
 
-// ProductHandler memegang dependensi ke Repository, TrackerManager, dan TrackerService
+// ProductHandler memegang dependensi ke Repository, TrackerManager, TrackerService, dan TelegramAuthManager
 type ProductHandler struct {
 	repo           *repository.ProductRepository
 	trackManager   *scraper.TrackerManager
 	trackerService *service.TrackerService
+	authManager    *auth.TelegramAuthManager
 }
 
 // Constructor untuk membuat ProductHandler baru
-func NewProductHandler(repo *repository.ProductRepository, manager *scraper.TrackerManager, svc *service.TrackerService) *ProductHandler {
+func NewProductHandler(
+	repo *repository.ProductRepository,
+	manager *scraper.TrackerManager,
+	svc *service.TrackerService,
+	authMgr *auth.TelegramAuthManager,
+) *ProductHandler {
 	return &ProductHandler{
 		repo:           repo,
 		trackManager:   manager,
 		trackerService: svc,
+		authManager:    authMgr,
 	}
 }
 
@@ -70,6 +78,7 @@ func (h *ProductHandler) AddTrack(w http.ResponseWriter, r *http.Request) {
 		Platform:    productInfo.Platform,
 		ProductID:   productInfo.ProductID,
 		Name:        productInfo.Name,
+		ImageURL:    productInfo.ImageURL,
 		BasePrice:   productInfo.BasePrice,
 		LastPrice:   productInfo.CurrentPrice,
 		TargetPrice: req.TargetPrice,
@@ -93,11 +102,24 @@ func (h *ProductHandler) AddTrack(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ListTracks menangani GET /api/v1/tracks
+// ListTracks menangani GET /api/v1/tracks (dengan filter opsional ?user_phone=... atau ?chat_id=...)
 func (h *ProductHandler) ListTracks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	products, err := h.repo.GetAllTrackedProducts(r.Context())
+	userPhone := r.URL.Query().Get("user_phone")
+	if userPhone == "" {
+		userPhone = r.URL.Query().Get("chat_id")
+	}
+
+	var products []domain.TrackedProduct
+	var err error
+
+	if userPhone != "" {
+		products, err = h.repo.GetTrackedProductsByUser(r.Context(), userPhone)
+	} else {
+		products, err = h.repo.GetAllTrackedProducts(r.Context())
+	}
+
 	if err != nil {
 		slog.Error("Gagal mengambil data dari database", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -177,5 +199,80 @@ func (h *ProductHandler) CronEvaluate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Evaluasi harga selesai dijalankan",
 		"result":  result,
+	})
+}
+
+// InitTelegramAuth menangani POST /api/v1/auth/telegram/init
+func (h *ProductHandler) InitTelegramAuth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if h.authManager == nil {
+		slog.Error("Gagal inisialisasi auth: Telegram Auth belum dikonfigurasi")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Telegram Auth belum dikonfigurasi"})
+		return
+	}
+
+	code, deepLink := h.authManager.CreateLoginSession()
+	slog.Info("🔑 Sesi login Telegram baru dibuat", "code", code, "deep_link", deepLink)
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"code":      code,
+		"deep_link": deepLink,
+	})
+}
+
+// PollTelegramAuth menangani GET /api/v1/auth/telegram/poll?code=AUTH_xxx
+func (h *ProductHandler) PollTelegramAuth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		slog.Warn("⚠️ Request polling ditolak: parameter 'code' kosong")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Parameter 'code' wajib diisi"})
+		return
+	}
+
+	session, ok := h.authManager.GetSession(code)
+	if !ok {
+		slog.Warn("⚠️ Sesi login tidak ditemukan atau kadaluarsa", "code", code)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Sesi login tidak ditemukan atau telah kadaluarsa"})
+		return
+	}
+
+	if session.Verified {
+		slog.Info("🎉 Sesi login berhasil diverifikasi & dikirim ke browser", "code", code, "user_phone", session.UserPhone, "name", session.FirstName)
+	}
+
+	json.NewEncoder(w).Encode(session)
+}
+
+// InstantLogin menangani POST /api/v1/auth/instant
+func (h *ProductHandler) InstantLogin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var req struct {
+		ChatID string `json:"chat_id"`
+		Name   string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ChatID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Chat ID wajib diisi"})
+		return
+	}
+
+	name := req.Name
+	if name == "" {
+		name = "User Telegram"
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"verified":   true,
+		"user_phone": req.ChatID,
+		"first_name": name,
+		"username":   "",
 	})
 }
