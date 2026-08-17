@@ -33,52 +33,52 @@
     toasts = toasts.filter((t) => t.id !== id);
   }
 
-  async function checkCurrentUser() {
-    try {
-      const res = await fetch("/api/v1/auth/me");
-      if (res.ok) {
-        currentUser = await res.json();
-      }
-    } catch (err) {
-      console.error("Auth check failed:", err);
-    }
-  }
-
-  function handleLoginSuccess(user) {
-    currentUser = user;
-    showToast(`Selamat datang kembali, ${user.first_name || "User"}!`, "success");
-    loadProducts();
-  }
-
-  async function handleLogout() {
-    try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
-      currentUser = null;
-      showToast("Berhasil logout dari sesi", "info");
-      loadProducts();
-    } catch (err) {
-      showToast("Gagal logout", "error");
-    }
-  }
-
-  async function loadProducts() {
+  async function fetchProducts() {
     isLoading = true;
     try {
-      const res = await fetch("/api/v1/products");
-      if (!res.ok) throw new Error("Gagal mengambil data produk");
+      let endpoint = "/api/v1/tracks";
+      if (currentUser && currentUser.user_phone) {
+        endpoint += `?chat_id=${encodeURIComponent(currentUser.user_phone)}`;
+      }
+
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error("Gagal mengambil data produk dari server");
       const data = await res.json();
-      products = data || [];
+      products = data.data || [];
     } catch (err) {
+      console.error(err);
       showToast(err.message, "error");
     } finally {
       isLoading = false;
     }
   }
 
+  function handleLoginSuccess(user) {
+    currentUser = user;
+    try {
+      localStorage.setItem("pt_auth_user", JSON.stringify(user));
+    } catch (e) {
+      console.error("Storage save error:", e);
+    }
+    showToast(`Selamat datang kembali, ${user.first_name || "User"}!`, "success");
+    fetchProducts();
+  }
+
+  function handleLogout() {
+    currentUser = null;
+    try {
+      localStorage.removeItem("pt_auth_user");
+    } catch (e) {
+      console.error("Storage remove error:", e);
+    }
+    showToast("Anda telah keluar dari sesi.", "info");
+    fetchProducts();
+  }
+
   async function handleAddProduct(payload) {
     isSubmitting = true;
     try {
-      const res = await fetch("/api/v1/products", {
+      const res = await fetch("/api/v1/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -90,8 +90,8 @@
         throw new Error(data.error || "Gagal menambahkan produk");
       }
 
-      showToast(`Produk "${data.name}" berhasil dipantau!`, "success");
-      await loadProducts();
+      showToast(`Produk "${data.data?.name || "Baru"}" berhasil dipantau!`, "success");
+      await fetchProducts();
       return true;
     } catch (err) {
       console.error(err);
@@ -104,7 +104,7 @@
 
   async function handleDeleteProduct(id) {
     try {
-      const res = await fetch(`/api/v1/products?id=${id}`, {
+      const res = await fetch(`/api/v1/tracks/${id}`, {
         method: "DELETE"
       });
 
@@ -124,17 +124,24 @@
   async function handleSyncCron() {
     isSyncing = true;
     try {
-      const res = await fetch("/api/v1/cron/trigger", {
-        method: "POST"
-      });
+      const res = await fetch("/api/cron");
+      if (!res.ok) throw new Error("Gagal menjalankan sinkronisasi cron");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal sinkronisasi cron");
+      
+      const result = data.result || {};
+      const drops = result.price_drops || 0;
+      const checked = result.total_checked || 0;
 
-      showToast(`Sinkronisasi selesai: ${data.evaluated || 0} produk dicek (${data.alerts_sent || 0} diskon baru)`, "success");
-      await loadProducts();
+      if (drops > 0) {
+        showToast(`${drops} penurunan harga terdeteksi & alert terkirim ke Telegram!`, "success");
+      } else {
+        showToast(`Evaluasi selesai: ${checked} produk dicek (harga masih stabil).`, "info");
+      }
+
+      await fetchProducts();
     } catch (err) {
       console.error(err);
-      showToast(err.message, "error");
+      showToast("Gagal menjalankan evaluasi harga", "error");
     } finally {
       isSyncing = false;
     }
@@ -199,8 +206,16 @@
   });
 
   onMount(() => {
-    checkCurrentUser();
-    loadProducts().then(() => {
+    try {
+      const savedUser = localStorage.getItem("pt_auth_user");
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+      }
+    } catch (e) {
+      console.error("Gagal load user dari localStorage:", e);
+    }
+
+    fetchProducts().then(() => {
       try {
         const savedOrder = localStorage.getItem("price_tracker_block_order");
         if (savedOrder && products.length > 0) {
