@@ -14,6 +14,7 @@ import (
 	"price_tracker/internal/handler"
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
+	"price_tracker/internal/service"
 )
 
 var app http.Handler
@@ -41,9 +42,11 @@ func init() {
 		if err == nil {
 			uniqloScraper := scraper.NewUniqloScraper()
 			trackManager := scraper.NewTrackerManager(uniqloScraper)
-			productHandler := handler.NewProductHandler(repo, trackManager)
+			trackerService := service.NewTrackerService(repo, trackManager)
+			productHandler := handler.NewProductHandler(repo, trackManager, trackerService)
 
 			r.Get("/test-scrape", productHandler.TestScrape)
+			r.Get("/api/cron", productHandler.CronEvaluate)
 
 			r.Route("/api/v1", func(r chi.Router) {
 				r.Post("/track", productHandler.AddTrack)

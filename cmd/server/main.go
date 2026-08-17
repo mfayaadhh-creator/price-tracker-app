@@ -15,6 +15,7 @@ import (
 	"price_tracker/internal/handler"
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
+	"price_tracker/internal/service"
 )
 
 func main() {
@@ -46,10 +47,11 @@ func main() {
 	defer repo.Close()
 	slog.Info("Berhasil terhubung ke Database Supabase")
 
-	// 2. Scraper & Handler
+	// 2. Scraper, Service & Handler
 	uniqloScraper := scraper.NewUniqloScraper()
 	trackManager := scraper.NewTrackerManager(uniqloScraper)
-	productHandler := handler.NewProductHandler(repo, trackManager)
+	trackerService := service.NewTrackerService(repo, trackManager)
+	productHandler := handler.NewProductHandler(repo, trackManager, trackerService)
 
 	// 3. Router
 	r := chi.NewRouter()
@@ -66,6 +68,7 @@ func main() {
 	})
 
 	r.Get("/test-scrape", productHandler.TestScrape)
+	r.Get("/api/cron", productHandler.CronEvaluate)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/track", productHandler.AddTrack)

@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 
 	"price_tracker/internal/domain"
 	"price_tracker/internal/repository"
 	"price_tracker/internal/scraper"
+	"price_tracker/internal/service"
 )
 
 // DTO untuk input request tracking produk baru
@@ -19,17 +21,19 @@ type TrackRequest struct {
 	TargetPrice float64 `json:"target_price"`
 }
 
-// ProductHandler memegang dependensi ke Repository dan TrackerManager
+// ProductHandler memegang dependensi ke Repository, TrackerManager, dan TrackerService
 type ProductHandler struct {
-	repo         *repository.ProductRepository
-	trackManager *scraper.TrackerManager
+	repo           *repository.ProductRepository
+	trackManager   *scraper.TrackerManager
+	trackerService *service.TrackerService
 }
 
 // Constructor untuk membuat ProductHandler baru
-func NewProductHandler(repo *repository.ProductRepository, manager *scraper.TrackerManager) *ProductHandler {
+func NewProductHandler(repo *repository.ProductRepository, manager *scraper.TrackerManager, svc *service.TrackerService) *ProductHandler {
 	return &ProductHandler{
-		repo:         repo,
-		trackManager: manager,
+		repo:           repo,
+		trackManager:   manager,
+		trackerService: svc,
 	}
 }
 
@@ -146,4 +150,32 @@ func (h *ProductHandler) TestScrape(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(productInfo)
+}
+
+// CronEvaluate menangani GET /api/cron untuk memicu evaluasi harga berkala
+func (h *ProductHandler) CronEvaluate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Validasi Secret Token opsional jika diset di env
+	cronSecret := os.Getenv("CRON_SECRET")
+	if cronSecret != "" {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "Bearer "+cronSecret && r.URL.Query().Get("key") != cronSecret {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized cron trigger"})
+			return
+		}
+	}
+
+	result, err := h.trackerService.EvaluateAllProducts(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Evaluasi harga selesai dijalankan",
+		"result":  result,
+	})
 }
