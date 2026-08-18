@@ -145,8 +145,10 @@ func (s *UniversalScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error
 		currentPrice, basePrice = extractPriceFromHTMLClasses(htmlContent)
 	}
 
-	if name == "" && currentPrice == 0 {
-		return nil, fmt.Errorf("tidak dapat mengekstrak data produk (nama & harga tidak ditemukan di metadata web)")
+	// VALIDASI PRODUK KETAT: Link harus memiliki nama dan harga > 0.
+	// Jika harga 0 (seperti pada homepage atau kategori), tolak dengan pesan edukatif.
+	if name == "" || currentPrice <= 0 {
+		return nil, fmt.Errorf("Link yang Anda masukkan bukan halaman produk spesifik (harga tidak ditemukan). Pastikan memasukkan link langsung ke satu barang produk, bukan halaman utama atau kategori toko.")
 	}
 
 	if basePrice == 0 {

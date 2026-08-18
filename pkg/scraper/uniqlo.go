@@ -171,7 +171,7 @@ func (s *UniqloScraper) FetchPrice(rawURL string) (*domain.ProductInfo, error) {
 	}
 
 	if productData.Product.Name == "" {
-		return nil, fmt.Errorf("PRODUK_UNAVAILABLE: data produk tidak ditemukan di pdpEntity")
+		return nil, fmt.Errorf("Link yang Anda masukkan bukan halaman produk spesifik Uniqlo (data produk tidak ditemukan). Pastikan memasukkan link langsung ke satu barang produk, bukan halaman kategori atau utama.")
 	}
 
 	prod := productData.Product
