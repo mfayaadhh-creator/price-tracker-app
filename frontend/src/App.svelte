@@ -19,6 +19,7 @@
   let isAboutModalOpen = false;
   let currentUser = null;
   let previewImageData = null;
+  let pendingProduct = null;
 
   // Drag & drop state
   let draggedIndex = null;
@@ -57,15 +58,33 @@
     }
   }
 
-  function handleLoginSuccess(user) {
+  async function handleLoginSuccess(user) {
     currentUser = user;
     try {
       localStorage.setItem("pt_auth_user", JSON.stringify(user));
     } catch (e) {
       console.error("Storage save error:", e);
     }
-    showToast(`Selamat datang kembali, ${user.first_name || "User"}!`, "success");
-    fetchProducts();
+    showToast(`Selamat datang, ${user.first_name || "User"}! Akun Telegram terhubung.`, "success");
+
+    // Jika ada produk yang sedang dipantau saat tamu mengklik tombol Telegram
+    if (pendingProduct) {
+      const toAdd = {
+        url: pendingProduct.url,
+        user_phone: user.user_phone,
+        target_price: pendingProduct.target_price || 0
+      };
+      pendingProduct = null;
+      await handleAddProduct(toAdd);
+    } else {
+      await fetchProducts();
+    }
+  }
+
+  function handleRequestGuestAuth(productData) {
+    pendingProduct = productData;
+    isAuthModalOpen = true;
+    showToast("Silakan tekan START di Telegram untuk menghubungkan akun & menyimpan produk.", "info");
   }
 
   function handleLogout() {
@@ -287,6 +306,7 @@
     <section class="creator-section">
       <BlockCreator 
         onAddProduct={handleAddProduct} 
+        onRequestAuth={handleRequestGuestAuth}
         {isSubmitting}
         {currentUser}
       />

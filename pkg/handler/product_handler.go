@@ -97,6 +97,12 @@ func (h *ProductHandler) AddTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tp.ID = id
+
+	// 4. Kirim pesan konfirmasi awal ke Telegram pengguna
+	if h.trackerService != nil {
+		h.trackerService.SendRegistrationAlert(tp)
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Produk berhasil didaftarkan untuk dipantau",

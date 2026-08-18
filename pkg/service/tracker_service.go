@@ -193,3 +193,37 @@ func (s *TrackerService) EvaluateAllProducts(ctx context.Context) (*EvaluationRe
 
 	return result, nil
 }
+
+// SendRegistrationAlert mengirimkan notifikasi konfirmasi pendaftaran produk ke Telegram user
+func (s *TrackerService) SendRegistrationAlert(p domain.TrackedProduct) {
+	if s.notifier == nil || p.UserPhone == "" {
+		return
+	}
+
+	platformName := p.Platform
+	if platformName == "" {
+		platformName = "Toko Online"
+	}
+
+	targetStr := ""
+	if p.TargetPrice > 0 {
+		targetStr = fmt.Sprintf("\n🎯 <b>Target Budget:</b> Rp %.0f", p.TargetPrice)
+	}
+
+	msg := fmt.Sprintf(
+		"🎉 <b>PRODUK BERHASIL DIPANTAU!</b>\n\n"+
+			"📦 <b>Produk:</b> %s\n"+
+			"🏪 <b>Platform:</b> %s\n"+
+			"💰 <b>Harga Terpantau:</b> <b>Rp %.0f</b>%s\n\n"+
+			"✅ <i>Sistem akan memantau produk ini 24/7. Notifikasi akan segera dikirim jika harga turun!</i>\n\n"+
+			"🛍️ <a href=\"%s\">Buka Produk di %s</a>",
+		p.Name, platformName, p.LastPrice, targetStr, p.URL, platformName,
+	)
+
+	go func() {
+		if err := s.notifier.SendAlert(p.UserPhone, msg); err != nil {
+			slog.Warn("Gagal mengirim notifikasi registrasi ke Telegram", "chat_id", p.UserPhone, "error", err)
+		}
+	}()
+}
+

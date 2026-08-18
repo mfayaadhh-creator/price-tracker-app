@@ -2,17 +2,13 @@
   import Icon from "./Icon.svelte";
 
   export let onAddProduct;
+  export let onRequestAuth;
   export let isSubmitting = false;
   export let currentUser = null;
 
   let url = "";
-  let userPhone = "";
   let targetPrice = "";
   let formError = "";
-
-  $: if (currentUser && currentUser.user_phone) {
-    userPhone = currentUser.user_phone;
-  }
 
   const sampleUrl = "https://www.uniqlo.com/id/id/products/E493232-000/00?colorDisplayCode=00&sizeDisplayCode=004";
 
@@ -34,14 +30,20 @@
       return;
     }
 
-    if (!userPhone.trim()) {
-      formError = "Chat ID Telegram wajib diisi agar notifikasi bisa dikirim!";
+    // Jika user belum login, picu alur One-Click Telegram Auth
+    if (!currentUser || !currentUser.user_phone) {
+      if (onRequestAuth) {
+        onRequestAuth({
+          url: url.trim(),
+          target_price: targetPrice ? parseFloat(targetPrice) : 0
+        });
+      }
       return;
     }
 
     const payload = {
       url: url.trim(),
-      user_phone: userPhone.trim(),
+      user_phone: currentUser.user_phone.trim(),
       target_price: targetPrice ? parseFloat(targetPrice) : 0
     };
 
@@ -91,7 +93,7 @@
       </div>
     </div>
 
-    <!-- Row: Chat ID & Target Budget (Conditional on Login Status) -->
+    <!-- Row: Target Price & Telegram Connection -->
     {#if currentUser && currentUser.user_phone}
       <div class="form-row">
         <!-- Target Price -->
@@ -132,26 +134,6 @@
       </div>
     {:else}
       <div class="form-row">
-        <!-- Telegram Chat ID -->
-        <div class="input-group flex-1">
-          <label for="telegram-id" class="input-label font-mono">
-            <span class="label-badge font-pixel">TG</span>
-            CHAT ID TELEGRAM PENERIMA:
-          </label>
-          <input 
-            id="telegram-id"
-            type="text" 
-            bind:value={userPhone} 
-            placeholder="Contoh: 123456789"
-            class="pixel-input"
-            disabled={isSubmitting}
-            required
-          />
-          <small class="helper-text font-mono">
-            💡 Tips: Gunakan tombol <strong>LOGIN TG</strong> di header agar Chat ID terisi otomatis.
-          </small>
-        </div>
-
         <!-- Target Price (Optional) -->
         <div class="input-group flex-1">
           <label for="target-price-guest" class="input-label font-mono">
@@ -167,8 +149,26 @@
             disabled={isSubmitting}
           />
           <small class="helper-text font-mono">
-            Kosongkan jika ingin notifikasi untuk setiap penurunan harga.
+            Kosongkan jika ingin menerima notifikasi di setiap penurunan harga.
           </small>
+        </div>
+
+        <!-- Telegram Connection Info Card -->
+        <div class="account-card guest-info-card flex-1 font-mono">
+          <div class="account-header">
+            <span class="label-badge font-pixel">TG</span>
+            <span class="account-label">AUTENTIKASI TELEGRAM OTOMATIS:</span>
+          </div>
+          <div class="account-details">
+            <div class="account-icon-wrap info-icon-wrap">
+              <Icon name="send" size={14} color="#0284C7" />
+            </div>
+            <div class="account-info">
+              <span class="guest-info-text">
+                Klik tombol di bawah untuk menghubungkan akun Telegram secara instan. Produk ini akan langsung tersimpan di dashboard privat Anda!
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     {/if}
@@ -183,19 +183,31 @@
 
     <!-- Submit Button -->
     <div class="form-footer">
-      <button 
-        type="submit" 
-        disabled={isSubmitting}
-        class="pixel-btn pixel-btn-orange submit-btn font-mono"
-      >
-        {#if isSubmitting}
-          <span class="spinner-pixel"></span>
-          <span>SEDANG MENGAMBIL DATA HARGA LIVE...</span>
-        {:else}
-          <Icon name="tag" size={15} color="#FFFFFF" />
-          <span>MULAI PANTAU HARGA PRODUK INI</span>
-        {/if}
-      </button>
+      {#if currentUser && currentUser.user_phone}
+        <button 
+          type="submit" 
+          disabled={isSubmitting}
+          class="pixel-btn pixel-btn-orange submit-btn font-mono"
+        >
+          {#if isSubmitting}
+            <span class="spinner-pixel"></span>
+            <span>SEDANG MENGAMBIL DATA HARGA LIVE...</span>
+          {:else}
+            <Icon name="tag" size={15} color="#FFFFFF" />
+            <span>MULAI PANTAU HARGA PRODUK INI</span>
+          {/if}
+        </button>
+      {:else}
+        <button 
+          type="submit" 
+          disabled={isSubmitting}
+          class="pixel-btn pixel-btn-blue submit-btn font-mono"
+        >
+          <Icon name="send" size={16} color="#FFFFFF" />
+          <span>PANTAU VIA BOT TELEGRAM (1-KLIK)</span>
+          <Icon name="external-link" size={13} color="#FFFFFF" />
+        </button>
+      {/if}
     </div>
   </form>
 </div>
