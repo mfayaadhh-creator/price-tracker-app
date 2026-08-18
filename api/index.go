@@ -46,6 +46,7 @@ func init() {
 			webhookURL := os.Getenv("WEBHOOK_URL")
 			telegramNotifier := telegram.NewTelegramNotifier(botToken)
 			authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot", webhookURL)
+			authManager.SetRepository(repo)
 
 			uniqloScraper := scraper.NewUniqloScraper()
 			universalScraper := scraper.NewUniversalScraper()

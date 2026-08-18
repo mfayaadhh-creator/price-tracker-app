@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"price_tracker/pkg/repository"
 )
 
 // LoginSession merepresentasikan sesi autentikasi Telegram sementara
@@ -27,6 +30,7 @@ type TelegramAuthManager struct {
 	botUser  string
 	mu       sync.RWMutex
 	sessions map[string]*LoginSession
+	repo     *repository.ProductRepository
 	client   *http.Client
 }
 
@@ -62,6 +66,11 @@ func NewTelegramAuthManager(botToken string, botUser string, webhookURL string) 
 	}
 
 	return mgr
+}
+
+// SetRepository menghubungkan database repository untuk persistensi sesi antar-serverless lambda
+func (m *TelegramAuthManager) SetRepository(repo *repository.ProductRepository) {
+	m.repo = repo
 }
 
 // SetWebhook mendaftarkan endpoint webhook publik ke Telegram API
@@ -157,33 +166,74 @@ func (m *TelegramAuthManager) CreateLoginSession() (string, string) {
 		CreatedAt: now,
 	}
 
+	// Simpan ke Supabase database (agar serverless multi-instance dapat memvalidasi)
+	if m.repo != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = m.repo.CreateAuthSession(ctx, code)
+	}
+
 	deepLink := fmt.Sprintf("https://t.me/%s?start=%s", m.botUser, code)
 	return code, deepLink
 }
 
-// GetSession memeriksa status sesi login
+// GetSession memeriksa status sesi login (baik dari memory maupun database Supabase)
 func (m *TelegramAuthManager) GetSession(code string) (*LoginSession, bool) {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	s, ok := m.sessions[code]
+	m.mu.RUnlock()
+
+	if ok && s.Verified {
+		return s, true
+	}
+
+	// Cek ke database Supabase (krusial untuk serverless multi-instance!)
+	if m.repo != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		dbSession, found, err := m.repo.GetAuthSession(ctx, code)
+		if err == nil && found && dbSession != nil {
+			localS := &LoginSession{
+				Code:      dbSession.Code,
+				Verified:  dbSession.Verified,
+				UserPhone: dbSession.UserPhone,
+				FirstName: dbSession.FirstName,
+				Username:  dbSession.Username,
+				CreatedAt: dbSession.CreatedAt,
+			}
+			m.mu.Lock()
+			m.sessions[code] = localS
+			m.mu.Unlock()
+			return localS, true
+		}
+	}
+
 	return s, ok
 }
 
 // VerifySession memvalidasi sesi ketika user menekan /start AUTH_xxx di bot
 func (m *TelegramAuthManager) VerifySession(code, chatID, firstName, username string) bool {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	s, ok := m.sessions[code]
-	if !ok {
-		return false
+	if ok {
+		s.Verified = true
+		s.UserPhone = chatID
+		s.FirstName = firstName
+		s.Username = username
+	}
+	m.mu.Unlock()
+
+	// Simpan ke Supabase agar seluruh lambda serverless bisa membacanya!
+	if m.repo != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		if err := m.repo.VerifyAuthSession(ctx, code, chatID, firstName, username); err != nil {
+			slog.Error("Gagal verify auth session di database", "code", code, "error", err)
+		} else {
+			slog.Info("Auth session terverifikasi di Supabase DB", "code", code, "chat_id", chatID)
+		}
 	}
 
-	s.Verified = true
-	s.UserPhone = chatID
-	s.FirstName = firstName
-	s.Username = username
 	return true
 }
 

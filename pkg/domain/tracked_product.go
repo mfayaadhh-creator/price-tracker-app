@@ -18,3 +18,13 @@ type TrackedProduct struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+// AuthSession merepresentasikan sesi autentikasi Telegram sementara di database
+type AuthSession struct {
+	Code      string    `json:"code"`
+	Verified  bool      `json:"verified"`
+	UserPhone string    `json:"user_phone"` // Telegram Chat ID
+	FirstName string    `json:"first_name"`
+	Username  string    `json:"username"`
+	CreatedAt time.Time `json:"created_at"`
+}

@@ -114,3 +114,28 @@ func (r *ProductRepository) RemoveTrackedProduct(ctx context.Context, id string)
 	_, err := r.pool.Exec(ctx, query, id)
 	return err
 }
+
+// CreateAuthSession membuat record session kode login baru di database
+func (r *ProductRepository) CreateAuthSession(ctx context.Context, code string) error {
+	query := `INSERT INTO telegram_auth_sessions (code, verified, created_at) VALUES ($1, false, NOW()) ON CONFLICT (code) DO NOTHING`
+	_, err := r.pool.Exec(ctx, query, code)
+	return err
+}
+
+// GetAuthSession mengambil status session login dari database
+func (r *ProductRepository) GetAuthSession(ctx context.Context, code string) (*domain.AuthSession, bool, error) {
+	query := `SELECT code, verified, COALESCE(user_phone, ''), COALESCE(first_name, ''), COALESCE(username, ''), created_at FROM telegram_auth_sessions WHERE code = $1`
+	var s domain.AuthSession
+	err := r.pool.QueryRow(ctx, query, code).Scan(&s.Code, &s.Verified, &s.UserPhone, &s.FirstName, &s.Username, &s.CreatedAt)
+	if err != nil {
+		return nil, false, nil
+	}
+	return &s, true, nil
+}
+
+// VerifyAuthSession mengonfirmasi session login saat /start diterima dari Telegram Webhook
+func (r *ProductRepository) VerifyAuthSession(ctx context.Context, code, userPhone, firstName, username string) error {
+	query := `UPDATE telegram_auth_sessions SET verified = true, user_phone = $1, first_name = $2, username = $3 WHERE code = $4`
+	_, err := r.pool.Exec(ctx, query, userPhone, firstName, username, code)
+	return err
+}
