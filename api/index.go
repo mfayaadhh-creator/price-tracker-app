@@ -44,11 +44,11 @@ func init() {
 		if err == nil {
 			botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 			webhookURL := os.Getenv("WEBHOOK_URL")
-			if webhookURL == "" {
-				if v := os.Getenv("VERCEL_PROJECT_PRODUCTION_URL"); v != "" {
+			if webhookURL == "" || strings.Contains(webhookURL, "price-tracker.vercel.app") {
+				if v := os.Getenv("VERCEL_PROJECT_PRODUCTION_URL"); v != "" && !strings.Contains(v, "price-tracker.vercel.app") {
 					webhookURL = "https://" + v
-				} else if v := os.Getenv("VERCEL_URL"); v != "" {
-					webhookURL = "https://" + v
+				} else {
+					webhookURL = "https://ecommerce-pricetracker.vercel.app"
 				}
 			}
 			telegramNotifier := telegram.NewTelegramNotifier(botToken)
