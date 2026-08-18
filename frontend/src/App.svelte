@@ -7,6 +7,7 @@
   import AuthModal from "./lib/AuthModal.svelte";
   import AboutModal from "./lib/AboutModal.svelte";
   import ImagePreviewModal from "./lib/ImagePreviewModal.svelte";
+  import PWAInstallBanner from "./lib/PWAInstallBanner.svelte";
   import Icon from "./lib/Icon.svelte";
 
   let products = [];
@@ -20,6 +21,7 @@
   let currentUser = null;
   let previewImageData = null;
   let pendingProduct = null;
+  let deferredPWAPrompt = null;
 
   // Drag & drop state
   let draggedIndex = null;
@@ -229,6 +231,19 @@
   });
 
   onMount(() => {
+    // PWA Install Prompt Listener
+    if (typeof window !== "undefined") {
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPWAPrompt = e;
+      });
+
+      window.addEventListener("appinstalled", () => {
+        deferredPWAPrompt = null;
+        showToast("Aplikasi berhasil dipasang di Home Screen!", "success");
+      });
+    }
+
     try {
       const savedUser = localStorage.getItem("pt_auth_user");
       if (savedUser) {
@@ -264,6 +279,7 @@
     {isSyncing} 
     onSync={handleSyncCron}
     {currentUser}
+    deferredPrompt={deferredPWAPrompt}
     onOpenLogin={() => isAuthModalOpen = true}
     onLogout={handleLogout}
     onOpenAbout={() => isAboutModalOpen = true}
@@ -438,6 +454,15 @@
   <AboutModal 
     isOpen={isAboutModalOpen} 
     onClose={() => isAboutModalOpen = false} 
+  />
+
+  <!-- PWA Instant Home Screen Install Prompt Banner -->
+  <PWAInstallBanner 
+    deferredPrompt={deferredPWAPrompt} 
+    onInstalled={() => {
+      deferredPWAPrompt = null;
+      showToast("Aplikasi berhasil dipasang di layar utama HP!", "success");
+    }}
   />
 
   <!-- Floating Toast Feedback System -->

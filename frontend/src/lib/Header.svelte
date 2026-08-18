@@ -8,33 +8,19 @@
   export let onOpenLogin;
   export let onLogout;
   export let onOpenAbout;
+  export let deferredPrompt = null;
 
   let isMobileMenuOpen = false;
-  let deferredPrompt = null;
-  let isInstallable = false;
 
-  if (typeof window !== "undefined") {
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      isInstallable = true;
-    });
-
-    window.addEventListener("appinstalled", () => {
-      deferredPrompt = null;
-      isInstallable = false;
-    });
-  }
+  $: isInstallable = !!deferredPrompt;
 
   async function handleInstallPWA() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
-      isInstallable = false;
       closeMobileMenu();
     }
-    deferredPrompt = null;
   }
 
   const githubUrl = "https://github.com/mfayaadhh-creator/price-tracker-app";
