@@ -58,7 +58,7 @@
     <!-- Brand Logo -->
     <div class="brand-group">
       <div class="brand-badge">
-        <img src="/favicon.svg" alt="Price Tracker Logo" class="brand-logo-icon" />
+        <img src="/pwa-192x192.png" alt="Price Tracker Logo" class="brand-logo-icon" />
         <span class="font-pixel brand-title">PRICE_TRACKER</span>
         <span class="version-tag">v2.0</span>
       </div>
@@ -199,7 +199,7 @@
   <aside class="mobile-drawer pixel-box">
     <div class="drawer-header">
       <div class="drawer-brand">
-        <img src="/favicon.svg" alt="Price Tracker Logo" class="drawer-logo-icon" />
+        <img src="/pwa-192x192.png" alt="Price Tracker Logo" class="drawer-logo-icon" />
         <span class="font-pixel drawer-title">MENU NAVIGASI</span>
       </div>
       <button 

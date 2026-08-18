@@ -44,7 +44,7 @@
 {#if isBannerVisible}
   <div class="pwa-floating-banner pixel-box font-mono" role="dialog" aria-label="Install Aplikasi">
     <div class="banner-icon-wrap">
-      <img src="/favicon.svg" alt="Price Tracker Logo" class="banner-logo-img" />
+      <img src="/pwa-192x192.png" alt="Price Tracker Logo" class="banner-logo-img" />
     </div>
     <div class="banner-text">
       <strong class="banner-title font-pixel">PASANG APLIKASI (PWA)</strong>

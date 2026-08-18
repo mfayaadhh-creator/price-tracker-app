@@ -26,7 +26,7 @@
       <!-- Modal Header -->
       <div class="modal-header">
         <div class="header-title font-pixel">
-          <img src="/favicon.svg" alt="Price Tracker" class="modal-brand-icon" />
+          <img src="/pwa-192x192.png" alt="Price Tracker" class="modal-brand-icon" />
           <span>TENTANG // PRICE_TRACKER v2.0</span>
         </div>
         <button type="button" class="close-btn" on:click={onClose} title="Tutup">

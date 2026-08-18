@@ -473,7 +473,7 @@
     <div class="footer-inner">
       <div class="footer-brand">
         <div class="footer-title-row">
-          <img src="/favicon.svg" alt="Price Tracker" class="footer-logo-icon" />
+          <img src="/pwa-192x192.png" alt="Price Tracker" class="footer-logo-icon" />
           <span class="font-pixel footer-title">PRICE_TRACKER v2.0</span>
         </div>
         <span class="footer-tagline">// High-Performance Multi-Store Price Monitor & Telegram Dispatcher</span>
