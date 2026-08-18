@@ -115,8 +115,11 @@ func (r *ProductRepository) RemoveTrackedProduct(ctx context.Context, id string)
 	return err
 }
 
-// CreateAuthSession membuat record session kode login baru di database
+// CreateAuthSession membuat record session kode login baru di database dan membersihkan session kadaluarsa
 func (r *ProductRepository) CreateAuthSession(ctx context.Context, code string) error {
+	// Bersihkan sesi usang (> 30 menit) agar tabel database tidak menumpuk
+	_, _ = r.pool.Exec(ctx, `DELETE FROM telegram_auth_sessions WHERE created_at < NOW() - INTERVAL '30 minutes'`)
+
 	query := `INSERT INTO telegram_auth_sessions (code, verified, created_at) VALUES ($1, false, NOW()) ON CONFLICT (code) DO NOTHING`
 	_, err := r.pool.Exec(ctx, query, code)
 	return err
