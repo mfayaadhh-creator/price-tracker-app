@@ -26,7 +26,7 @@
       <!-- Modal Header -->
       <div class="modal-header">
         <div class="header-title font-pixel">
-          <Icon name="info" size={16} color="#FF5722" />
+          <img src="/favicon.svg" alt="Price Tracker" class="modal-brand-icon" />
           <span>TENTANG // PRICE_TRACKER v2.0</span>
         </div>
         <button type="button" class="close-btn" on:click={onClose} title="Tutup">
@@ -158,6 +158,13 @@
     align-items: center;
     gap: 8px;
     letter-spacing: 0.5px;
+  }
+
+  .modal-brand-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
   }
 
   .close-btn {

@@ -58,7 +58,7 @@
     <!-- Brand Logo -->
     <div class="brand-group">
       <div class="brand-badge">
-        <span class="pixel-dot"></span>
+        <img src="/favicon.svg" alt="Price Tracker Logo" class="brand-logo-icon" />
         <span class="font-pixel brand-title">PRICE_TRACKER</span>
         <span class="version-tag">v2.0</span>
       </div>
@@ -199,7 +199,7 @@
   <aside class="mobile-drawer pixel-box">
     <div class="drawer-header">
       <div class="drawer-brand">
-        <span class="pixel-dot"></span>
+        <img src="/favicon.svg" alt="Price Tracker Logo" class="drawer-logo-icon" />
         <span class="font-pixel drawer-title">MENU NAVIGASI</span>
       </div>
       <button 
@@ -352,12 +352,24 @@
     gap: 8px;
   }
 
-  .pixel-dot {
-    width: 11px;
-    height: 11px;
-    background-color: var(--accent-orange);
+  .brand-logo-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
     border: 2px solid var(--border-color);
     box-shadow: 2px 2px 0px var(--border-color);
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .drawer-logo-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--border-color);
+    box-shadow: 1.5px 1.5px 0px var(--border-color);
+    object-fit: cover;
+    flex-shrink: 0;
   }
 
   .brand-title {
@@ -566,9 +578,9 @@
       font-size: 0.95rem;
     }
 
-    .pixel-dot {
-      width: 9px;
-      height: 9px;
+    .brand-logo-icon {
+      width: 20px;
+      height: 20px;
     }
 
     .mobile-top-actions {

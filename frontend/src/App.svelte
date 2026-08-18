@@ -472,7 +472,10 @@
   <footer class="app-footer font-mono">
     <div class="footer-inner">
       <div class="footer-brand">
-        <span class="font-pixel footer-title">PRICE_TRACKER v2.0</span>
+        <div class="footer-title-row">
+          <img src="/favicon.svg" alt="Price Tracker" class="footer-logo-icon" />
+          <span class="font-pixel footer-title">PRICE_TRACKER v2.0</span>
+        </div>
         <span class="footer-tagline">// High-Performance Multi-Store Price Monitor & Telegram Dispatcher</span>
       </div>
       <div class="footer-meta">
@@ -714,7 +717,20 @@
   .footer-brand {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
+  }
+
+  .footer-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .footer-logo-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
   }
 
   .footer-title {

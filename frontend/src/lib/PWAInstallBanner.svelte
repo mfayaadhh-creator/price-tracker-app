@@ -44,7 +44,7 @@
 {#if isBannerVisible}
   <div class="pwa-floating-banner pixel-box font-mono" role="dialog" aria-label="Install Aplikasi">
     <div class="banner-icon-wrap">
-      <Icon name="download" size={18} color="#FF5722" strokeWidth={2.5} />
+      <img src="/favicon.svg" alt="Price Tracker Logo" class="banner-logo-img" />
     </div>
     <div class="banner-text">
       <strong class="banner-title font-pixel">PASANG APLIKASI (PWA)</strong>
@@ -94,12 +94,20 @@
   .banner-icon-wrap {
     width: 36px;
     height: 36px;
-    background-color: var(--accent-orange-light, #FFF3E0);
+    border-radius: 8px;
     border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 0px var(--border-color);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .banner-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .banner-text {
