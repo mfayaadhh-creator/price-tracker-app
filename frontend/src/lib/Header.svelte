@@ -289,18 +289,99 @@
 
   @media (max-width: 768px) {
     .header-inner {
-      flex-direction: column;
-      align-items: flex-start;
+      padding: 10px 14px;
+      gap: 10px;
     }
-    
+
+    .brand-title {
+      font-size: 1.05rem;
+    }
+
+    .brand-subtitle {
+      display: none;
+    }
+
+    .version-tag {
+      font-size: 0.62rem;
+      padding: 1px 4px;
+    }
+
     .actions-group {
-      width: 100%;
-      justify-content: flex-start;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav-links {
+      gap: 4px;
+    }
+
+    .nav-btn {
+      padding: 4px 7px;
+      font-size: 0.68rem;
+      gap: 3px;
+      box-shadow: 1.5px 1.5px 0px var(--border-color);
     }
 
     .status-ticker {
-      width: 100%;
-      justify-content: space-around;
+      padding: 4px 7px;
+      font-size: 0.68rem;
+      box-shadow: 1.5px 1.5px 0px var(--border-color);
+    }
+
+    .pixel-btn {
+      padding: 5px 9px;
+      font-size: 0.72rem;
+      gap: 5px;
+      box-shadow: 1.5px 1.5px 0px var(--border-color);
+    }
+
+    .user-profile-badge {
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      gap: 6px;
+      box-shadow: 1.5px 1.5px 0px var(--border-color);
+    }
+
+    .user-name small {
+      display: none;
+    }
+
+    .logout-btn {
+      font-size: 0.7rem;
+      padding: 0 2px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .header-inner {
+      padding: 8px 10px;
+      gap: 6px;
+    }
+
+    .pixel-dot {
+      width: 9px;
+      height: 9px;
+    }
+
+    .brand-title {
+      font-size: 0.95rem;
+    }
+
+    .nav-btn span {
+      display: none;
+    }
+
+    .nav-btn {
+      padding: 5px 6px;
+    }
+
+    .status-ticker {
+      display: none;
+    }
+
+    .pixel-btn span {
+      font-size: 0.68rem;
     }
   }
 </style>
