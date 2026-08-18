@@ -36,13 +36,15 @@
   }
 
   async function fetchProducts() {
+    if (!currentUser || !currentUser.user_phone) {
+      products = [];
+      isLoading = false;
+      return;
+    }
+
     isLoading = true;
     try {
-      let endpoint = "/api/v1/tracks";
-      if (currentUser && currentUser.user_phone) {
-        endpoint += `?chat_id=${encodeURIComponent(currentUser.user_phone)}`;
-      }
-
+      const endpoint = `/api/v1/tracks?chat_id=${encodeURIComponent(currentUser.user_phone)}`;
       const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Gagal mengambil data produk dari server");
       const data = await res.json();
@@ -343,7 +345,23 @@
           <p class="loading-text font-pixel">MEMUAT DAFTAR BLOCKS DARI DATABASE...</p>
         </div>
 
-      <!-- Empty State -->
+      <!-- Guest State (Not Logged In) -->
+      {:else if !currentUser}
+        <div class="empty-box pixel-box">
+          <div class="empty-pixel-icon">
+            <Icon name="lock" size={48} color="#FF5722" />
+          </div>
+          <h3 class="empty-title font-display">Dashboard Privat & Terisolasi</h3>
+          <p class="empty-desc font-mono">
+            Setiap pengguna memiliki ruang pemantauan harga pribadi yang terenkripsi dan terpisah. Silakan hubungkan akun Telegram Anda untuk melihat dan memantau produk secara privat.
+          </p>
+          <button class="pixel-btn btn-primary font-pixel mt-4" on:click={() => isAuthModalOpen = true}>
+            <Icon name="send" size={15} color="#000" />
+            <span>LOGIN DENGAN TELEGRAM</span>
+          </button>
+        </div>
+
+      <!-- Empty State (Logged In with 0 tracks) -->
       {:else if products.length === 0}
         <div class="empty-box pixel-box">
           <div class="empty-pixel-icon">
@@ -351,7 +369,7 @@
           </div>
           <h3 class="empty-title font-display">Belum Ada Block Produk yang Dipantau</h3>
           <p class="empty-desc font-mono">
-            Salin link produk dari website toko favorit Anda (Agres.id, Uniqlo, Zara, Zalora, H&M, dll) dan masukkan pada form di atas untuk memulai pemantauan harga otomatis!
+            Halo <strong>{currentUser.first_name || "User"}</strong>! Salin link produk dari website toko favorit Anda (Agres.id, Uniqlo, Zara, Zalora, H&M, dll) dan masukkan pada form di atas untuk memulai pemantauan harga otomatis!
           </p>
         </div>
 

@@ -6,7 +6,7 @@
   export let currentUser = null;
 
   let url = "";
-  let userPhone = "7514771766";
+  let userPhone = "";
   let targetPrice = "";
   let formError = "";
 
@@ -142,7 +142,7 @@
             id="telegram-id"
             type="text" 
             bind:value={userPhone} 
-            placeholder="Contoh: 7514771766"
+            placeholder="Contoh: 123456789"
             class="pixel-input"
             disabled={isSubmitting}
             required

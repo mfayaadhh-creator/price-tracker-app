@@ -104,7 +104,7 @@ func (h *ProductHandler) AddTrack(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ListTracks menangani GET /api/v1/tracks (dengan filter opsional ?user_phone=... atau ?chat_id=...)
+// ListTracks menangani GET /api/v1/tracks (dengan filter wajib ?user_phone=... atau ?chat_id=...)
 func (h *ProductHandler) ListTracks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -113,15 +113,17 @@ func (h *ProductHandler) ListTracks(w http.ResponseWriter, r *http.Request) {
 		userPhone = r.URL.Query().Get("chat_id")
 	}
 
-	var products []domain.TrackedProduct
-	var err error
-
-	if userPhone != "" {
-		products, err = h.repo.GetTrackedProductsByUser(r.Context(), userPhone)
-	} else {
-		products, err = h.repo.GetAllTrackedProducts(r.Context())
+	// ISOLASI PRIVASI USER: Jika tidak ada chat_id / user_phone, kembalikan list kosong.
+	// JANGAN pernah membocorkan seluruh isi database ke publik!
+	if userPhone == "" {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"total": 0,
+			"data":  []domain.TrackedProduct{},
+		})
+		return
 	}
 
+	products, err := h.repo.GetTrackedProductsByUser(r.Context(), userPhone)
 	if err != nil {
 		slog.Error("Gagal mengambil data dari database", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)

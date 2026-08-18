@@ -12,8 +12,8 @@
   let isInitializing = false;
   let isPolling = false;
   let pollInterval = null;
-  let manualChatId = "7514771766";
-  let manualName = "Muhammad Fayaadh";
+  let manualChatId = "";
+  let manualName = "";
   let errorMsg = "";
 
   async function initAuthSession() {
@@ -233,7 +233,7 @@
                 id="manual-chat-id"
                 type="text" 
                 bind:value={manualChatId} 
-                placeholder="Contoh: 7514771766"
+                placeholder="Contoh: 123456789"
                 class="pixel-input"
                 required
               />
