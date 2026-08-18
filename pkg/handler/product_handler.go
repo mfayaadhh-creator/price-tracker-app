@@ -229,6 +229,11 @@ func (h *ProductHandler) InitTelegramAuth(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Otomatis selaraskan Webhook Telegram dengan domain yang sedang diakses browser
+	if r.Host != "" {
+		h.authManager.EnsureWebhook("https://" + r.Host)
+	}
+
 	code, deepLink := h.authManager.CreateLoginSession()
 	slog.Info("🔑 Sesi login Telegram baru dibuat", "code", code, "deep_link", deepLink)
 

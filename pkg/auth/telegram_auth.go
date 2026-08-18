@@ -26,12 +26,13 @@ type LoginSession struct {
 }
 
 type TelegramAuthManager struct {
-	botToken string
-	botUser  string
-	mu       sync.RWMutex
-	sessions map[string]*LoginSession
-	repo     *repository.ProductRepository
-	client   *http.Client
+	botToken       string
+	botUser        string
+	currentWebhook string
+	mu             sync.RWMutex
+	sessions       map[string]*LoginSession
+	repo           *repository.ProductRepository
+	client         *http.Client
 }
 
 func NewTelegramAuthManager(botToken string, botUser string, webhookURL string) *TelegramAuthManager {
@@ -73,6 +74,35 @@ func (m *TelegramAuthManager) SetRepository(repo *repository.ProductRepository) 
 	m.repo = repo
 }
 
+// EnsureWebhook memastikan webhook Telegram selalu sinkron dengan domain aktif saat request login diterima
+func (m *TelegramAuthManager) EnsureWebhook(hostURL string) {
+	if m.botToken == "" || hostURL == "" {
+		return
+	}
+
+	if strings.Contains(hostURL, "localhost") || strings.Contains(hostURL, "127.0.0.1") {
+		return
+	}
+
+	targetWebhook := strings.TrimRight(hostURL, "/") + "/api/v1/auth/telegram/webhook"
+	m.mu.RLock()
+	cw := m.currentWebhook
+	m.mu.RUnlock()
+
+	if cw == targetWebhook {
+		return
+	}
+
+	go func() {
+		if err := m.SetWebhook(targetWebhook); err == nil {
+			m.mu.Lock()
+			m.currentWebhook = targetWebhook
+			m.mu.Unlock()
+			slog.Info("🔄 Telegram Webhook otomatis diselaraskan", "url", targetWebhook)
+		}
+	}()
+}
+
 // SetWebhook mendaftarkan endpoint webhook publik ke Telegram API
 func (m *TelegramAuthManager) SetWebhook(webhookURL string) error {
 	if m.botToken == "" {
@@ -89,6 +119,11 @@ func (m *TelegramAuthManager) SetWebhook(webhookURL string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("telegram setWebhook returned HTTP %d", resp.StatusCode)
 	}
+
+	m.mu.Lock()
+	m.currentWebhook = webhookURL
+	m.mu.Unlock()
+
 	return nil
 }
 

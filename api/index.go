@@ -44,6 +44,13 @@ func init() {
 		if err == nil {
 			botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 			webhookURL := os.Getenv("WEBHOOK_URL")
+			if webhookURL == "" {
+				if v := os.Getenv("VERCEL_PROJECT_PRODUCTION_URL"); v != "" {
+					webhookURL = "https://" + v
+				} else if v := os.Getenv("VERCEL_URL"); v != "" {
+					webhookURL = "https://" + v
+				}
+			}
 			telegramNotifier := telegram.NewTelegramNotifier(botToken)
 			authManager := auth.NewTelegramAuthManager(botToken, "mf_pricetracker_bot", webhookURL)
 			authManager.SetRepository(repo)
