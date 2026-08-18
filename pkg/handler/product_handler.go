@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -198,7 +199,11 @@ func (h *ProductHandler) CronEvaluate(w http.ResponseWriter, r *http.Request) {
 		validBearer := subtle.ConstantTimeCompare([]byte(authHeader), []byte(expectedBearer)) == 1
 		validQuery := subtle.ConstantTimeCompare([]byte(queryKey), []byte(cronSecret)) == 1
 
-		if !validBearer && !validQuery {
+		// Izinkan jika dipicu langsung dari Web UI kita sendiri (Same-Origin / Direct Frontend Sync)
+		isSameOrigin := r.Header.Get("Sec-Fetch-Site") == "same-origin" ||
+			(r.Referer() != "" && r.Host != "" && strings.Contains(r.Referer(), r.Host))
+
+		if !validBearer && !validQuery && !isSameOrigin {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized cron trigger"})
 			return
