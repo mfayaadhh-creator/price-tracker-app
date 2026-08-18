@@ -1,49 +1,61 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141822" />
+      <stop offset="100%" stop-color="#090B0F" />
+    </linearGradient>
+
+    <!-- Electric Orange Tag -->
     <linearGradient id="tagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF6D00" />
-      <stop offset="100%" stop-color="#FF3D00" />
+      <stop offset="0%" stop-color="#FF5722" />
+      <stop offset="100%" stop-color="#FF2B00" />
     </linearGradient>
   </defs>
 
-  <!-- Dark Solid Container -->
-  <rect width="512" height="512" rx="72" fill="#0C0E12" />
-  <rect x="20" y="20" width="472" height="472" rx="56" fill="none" stroke="#232733" stroke-width="12" />
+  <!-- 1. Background Squircle Canvas -->
+  <rect width="512" height="512" rx="116" fill="url(#bgGrad)" />
+  <rect x="18" y="18" width="476" height="476" rx="98" fill="none" stroke="#252C3D" stroke-width="12" />
 
-  <!-- Corner Status Dots -->
-  <rect x="48" y="48" width="18" height="18" fill="#FF5722" />
-  <rect x="446" y="48" width="18" height="18" fill="#00E676" />
-  <rect x="48" y="446" width="18" height="18" fill="#232733" />
-  <rect x="446" y="446" width="18" height="18" fill="#FF5722" />
-
-  <!-- Main Brandmark: Geometric Price Tag Badge with Trend Drop Arrow -->
-  <!-- Tag Body -->
+  <!-- 2. Main Price Tag Silhouette -->
+  <!-- Tag points left-up, flat right-down -->
   <path 
-    d="M130 110 L280 110 L400 230 L260 370 L130 240 Z" 
+    d="M 140 230 
+       L 230 140 
+       A 20 20 0 0 1 245 134 
+       L 394 134 
+       A 20 20 0 0 1 414 154 
+       L 414 303 
+       A 20 20 0 0 1 408 318 
+       L 318 408 
+       A 28 28 0 0 1 278 408 
+       L 140 270 
+       A 28 28 0 0 1 140 230 Z" 
     fill="url(#tagGrad)" 
     stroke="#FFFFFF" 
     stroke-width="16" 
-    stroke-linejoin="miter" 
+    stroke-linejoin="round"
   />
 
-  <!-- Tag Eyelet Circle -->
-  <circle cx="205" cy="185" r="24" fill="#0C0E12" stroke="#FFFFFF" stroke-width="12" />
+  <!-- Tag Eyelet Circle (Hole for String) -->
+  <circle cx="352" cy="196" r="24" fill="#090B0F" stroke="#FFFFFF" stroke-width="12" />
 
-  <!-- Price Drop Trend Line & Arrow -->
+  <!-- 3. Unmistakable Price Drop Downward Arrow (Pure Bold Vector) -->
   <path 
-    d="M180 390 L260 390 L340 310 L390 310" 
-    fill="none" 
-    stroke="#00E676" 
-    stroke-width="20" 
-    stroke-linecap="square" 
-    stroke-linejoin="miter" 
+    d="M 210 240 L 290 320" 
+    stroke="#FFFFFF" 
+    stroke-width="32" 
+    stroke-linecap="round" 
   />
   <polyline 
-    points="340,390 390,390 390,340" 
+    points="220,320 290,320 290,250" 
     fill="none" 
-    stroke="#00E676" 
-    stroke-width="20" 
-    stroke-linecap="square" 
-    stroke-linejoin="miter" 
+    stroke="#FFFFFF" 
+    stroke-width="32" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
   />
+
+  <!-- 4. Top-Right Active Radar Pulse Dot -->
+  <circle cx="434" cy="78" r="14" fill="#00E676" stroke="#FFFFFF" stroke-width="4" />
 </svg>
