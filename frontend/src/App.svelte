@@ -278,7 +278,7 @@
           <span>UNIVERSAL E-COMMERCE PRICE TRACKER v2.0</span>
         </div>
         <h1 class="hero-title font-display">
-          PANTAU HARGA & DISKON E-COMMERCE DENGAN <span class="highlight-text">MODULAR BLOCKS</span>
+          PANTAU HARGA & DISKON E-COMMERCE DENGAN <span class="highlight-text">NOTIFIKASI INSTAN TELEGRAM</span>
         </h1>
         <p class="hero-desc font-mono">
           Pantau penurunan harga laptop, gadget, pakaian, dan barang impian Anda dari toko online mana saja (Agres.id, Uniqlo, Zara, Zalora, H&M, dll) secara otomatis 24/7. Notifikasi instan langsung dikirim ke Telegram Anda saat harga turun!
@@ -338,10 +338,10 @@
         <div class="section-title-group">
           <h2 class="section-title font-pixel">
             <Icon name="grid" size={16} color="#FF5722" />
-            <span>ACTIVE_BLOCKS ({filteredProducts.length})</span>
+            <span>PRODUK_TERPANTAU ({filteredProducts.length})</span>
           </h2>
           <span class="drag-hint font-mono">
-            // Tahan & geser (drag) atau gunakan tombol ◀ ▶ untuk mengatur urutan block
+            // Tahan & geser (drag) atau gunakan tombol ◀ ▶ untuk mengatur urutan produk
           </span>
         </div>
 
