@@ -2,6 +2,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go)](https://golang.org)
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte)](https://svelte.dev)
+[![PWA](https://img.shields.io/badge/PWA-Ready-3ECF8E?style=flat-square&logo=pwa)](https://ecommerce-pricetracker.vercel.app)
 [![Router](https://img.shields.io/badge/Router-go--chi%2Fchi-blue?style=flat-square)](https://github.com/go-chi/chi)
 [![Database](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -14,9 +15,10 @@ Aplikasi pemantau harga dan pemburu diskon otomatis untuk berbagai platform toko
 
 Proyek ini dikembangkan sebagai **sarana pembelajaran dan eksplorasi rekayasa perangkat lunak (software engineering)**, dengan fokus pada:
 1. **Eksplorasi Framework `go-chi/chi`**: Membangun RESTful API yang modular, terstruktur, dan idiomatik di Go menggunakan middleware standar (*logging, recovery, CORS, timing attack defense, and routing group*).
-2. **Reverse Engineering & Scraping Multi-Platform**: Mempelajari cara kerja ekstraksi metadata web modern (*Next.js `__NEXT_DATA__` state, JSON-LD Schema.org, OpenGraph/Twitter Meta, serta penanganan tantangan bot Akamai Interstitial Solver*).
+2. **Reverse Engineering & Scraping Multi-Platform**: Mempelajari cara kerja ekstraksi metadata web modern (*Next.js `__NEXT_DATA__` state, JSON-LD Schema.org, OpenGraph/Twitter Meta, serta penanganan proteksi Akamai Interstitial Solver*).
 3. **Concurrency & Real-Time Alerting**: Mengoptimalkan evaluasi harga ribuan produk secara paralel menggunakan *Goroutines & Worker Pools (`sync.WaitGroup`)* serta sistem antrean notifikasi Telegram.
-4. **Passwordless Authentication & One-Click UX**: Merancang alur login modern yang aman dan praktis tanpa password menggunakan *Telegram Deep-Link Bot Auth* dan auto-registration.
+4. **Passwordless Authentication & Serverless Persistence**: Merancang alur login modern yang aman dan praktis tanpa password menggunakan *Telegram Deep-Link Bot Auth* dengan persistensi sesi database PostgreSQL lintas Lambda Serverless Vercel.
+5. **Progressive Web App (PWA) Experience**: Menghadirkan pengalaman aplikasi native di Mobile (Android/iOS) dan Desktop (Windows/macOS/Linux) tanpa perlu melalui app store.
 
 ---
 
@@ -28,14 +30,18 @@ Proyek ini dikembangkan sebagai **sarana pembelajaran dan eksplorasi rekayasa pe
   - **Toko Mandiri**: Toko berbasis platform *Shopify* dan *WooCommerce*.
 - 🛡️ **Anti-Bot & Akamai Interstitial Solver**: Memanfaatkan TLS Client Fingerprint impersonation (*Chrome 120 profile*) dan pemecah tantangan Proof-of-Work JavaScript internal.
 - ⚡ **In-Memory Scraping Cache (TTL 5 Menit)**: Mencegah pemanggilan berulang ke server toko untuk URL yang sama, menghemat bandwidth, dan mencegah pembatasan IP.
+- 🔍 **Strict URL Validation**: Sistem secara cerdas memvalidasi link dan menolak link homepage/kategori umum untuk memastikan hanya halaman produk valid yang dipantau.
 - 🤖 **One-Click Telegram Flow & Passwordless Auth**: Pengguna cukup menempel link produk dan menekan tombol Telegram. Akun dan produk otomatis terhubung tanpa perlu mencari nomor Chat ID manual.
-- 🔔 **Instant Telegram Registration Alert**: Bot secara otomatis mengirimkan notifikasi konfirmasi pendaftaran produk langsung ke ponsel pengguna.
+- 🔄 **Self-Healing Dynamic Webhook**: Backend secara otomatis menyelaraskan URL Webhook Telegram dengan domain aktif saat request login diterima.
+- 🔔 **Instant Telegram Registration Alert**: Bot secara otomatis mengirimkan notifikasi konfirmasi pendaftaran produk langsung ke ponsel pengguna saat pertama kali didaftarkan.
+- 📱 **Progressive Web App (PWA) Support (Mobile & Desktop)**:
+  - **Standalone Mode**: Tampilan aplikasi penuh tanpa address bar browser.
+  - **Offline Resilience & Fast Startup**: Menggunakan *Service Worker (`sw.js`)* dengan strategi *Stale-While-Revalidate*.
+  - **Dual Install Prompt**: Banner floating otomatis di layar depan + tombol cadangan di sidebar menu.
+  - **Adaptive HD Icons**: Ikon resolusi tinggi dengan dukungan *maskable safe-zone* Android dan *Apple Touch Icon*.
 - 🔒 **Isolasi Data Pengguna & Guest Mode**: Setiap pengguna memiliki ruang pemantauan privat yang aman dan terpisah.
-- 📡 **Dual-Mode Telegram Architecture**:
-  - **Webhook Mode**: Diaktifkan di lingkungan produksi (Vercel Serverless / VPS dengan domain HTTPS).
-  - **Long-Polling Mode**: Berjalan otomatis di lingkungan lokal pengembangan (*localhost*).
 - 🎯 **Target Budget Alerts**: Pengguna dapat mengatur batas budget tertentu. Bot akan memprioritaskan peringatan ketika harga menyentuh target.
-- 📱 **Mobile Drawer Sidebar & Neo-Brutalist UI**: Antarmuka responsif berbasis Svelte yang bebas dependensi CSS berat, dilengkapi navigasi mobile drawer yang ramping, sistem ikon vektor SVG kustom, dan drag-and-drop reordering.
+- 🎨 **Responsive Mobile Drawer & Neo-Brutalist UI**: Antarmuka responsif berbasis Svelte yang bebas dependensi CSS berat, dilengkapi navigasi mobile drawer yang ramping, sistem logo resmi (Price Tag + Alert Bell), dan drag-and-drop reordering.
 - 🛡️ **Security & Anti-Timing Attack Defense**: Endpoint evaluasi harga diamankan dengan `CRON_SECRET` dan verifikasi *constant-time comparison* (`crypto/subtle`).
 
 ---
@@ -50,13 +56,13 @@ price_tracker/
 ├── cmd/
 │   └── server/                # Entrypoint server Go standalone (main.go)
 ├── frontend/                  # Frontend SPA (Svelte + Vite)
-│   ├── public/                # Favicon SVG, Apple Touch Icon, static assets
+│   ├── public/                # Manifest PWA, Service Worker, Favicon SVG, Apple Touch Icon
 │   └── src/
-│       ├── lib/               # Svelte Components (Header, BlockCreator, ProductBlock, Modal, Toast, Icon)
+│       ├── lib/               # Svelte Components (Header, BlockCreator, ProductBlock, PWAInstallBanner, Modals, Toast)
 │       ├── App.svelte         # Main Orchestrator UI
-│       └── main.js
+│       └── main.js            # PWA Service Worker Registration & App Mount
 ├── pkg/
-│   ├── auth/                  # Telegram Deep-Link Auth & Webhook Handler
+│   ├── auth/                  # Telegram Deep-Link Auth, Dynamic Webhook & Session Manager
 │   ├── domain/                # Entity models & interface contracts
 │   ├── handler/               # HTTP Handlers (Chi Router endpoints)
 │   ├── repository/            # PostgreSQL Database Layer (pgx/v5)
@@ -133,7 +139,7 @@ Proyek ini telah dikonfigurasi agar dapat di-deploy secara *Fullstack Serverless
 2. Tambahkan **Environment Variables** di Vercel Dashboard Settings:
    - `DATABASE_URL`
    - `TELEGRAM_BOT_TOKEN`
-   - `WEBHOOK_URL` (Contoh: `https://your-project.vercel.app`)
+   - `WEBHOOK_URL` (Opsional, server otomatis mendeteksi domain Vercel)
    - `CRON_SECRET`
 3. Deploy! Vercel akan otomatis membangun frontend Svelte, menyajikan endpoint API Go di `/api`, dan menjalankan jadwal evaluasi harga berkala sesuai [`vercel.json`](vercel.json).
 
