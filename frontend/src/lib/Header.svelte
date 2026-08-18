@@ -10,6 +10,32 @@
   export let onOpenAbout;
 
   let isMobileMenuOpen = false;
+  let deferredPrompt = null;
+  let isInstallable = false;
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      isInstallable = true;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredPrompt = null;
+      isInstallable = false;
+    });
+  }
+
+  async function handleInstallPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      isInstallable = false;
+      closeMobileMenu();
+    }
+    deferredPrompt = null;
+  }
 
   const githubUrl = "https://github.com/mfayaadhh-creator/price-tracker-app";
   const botUrl = "https://t.me/mf_pricetracker_bot";
@@ -282,6 +308,18 @@
       </nav>
 
       <div class="drawer-divider"></div>
+
+      <!-- PWA Install Button (If browser supports install prompt) -->
+      {#if isInstallable}
+        <button 
+          type="button" 
+          class="pixel-btn pixel-btn-green drawer-install-btn font-mono"
+          on:click={handleInstallPWA}
+        >
+          <Icon name="download" size={15} color="#000000" />
+          <span>INSTALL APP KE HOME SCREEN</span>
+        </button>
+      {/if}
 
       <!-- Sync Button inside Drawer -->
       <button 
@@ -755,6 +793,14 @@
   .nav-item-content small {
     font-size: 0.68rem;
     color: var(--text-muted);
+  }
+
+  .drawer-install-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: -0.2px;
   }
 
   .drawer-sync-btn {
