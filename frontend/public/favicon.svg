@@ -1,70 +1,60 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Dark Canvas Background Gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#151A24" />
+    <linearGradient id="bgG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#12161F" />
       <stop offset="100%" stop-color="#080A0E" />
     </linearGradient>
-
-    <!-- Electric Orange Tag Gradient -->
-    <linearGradient id="tagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="tagG" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FF6200" />
-      <stop offset="100%" stop-color="#FF2600" />
+      <stop offset="100%" stop-color="#EE2800" />
     </linearGradient>
-
-    <!-- Emerald Pulse Gradient -->
-    <linearGradient id="neonGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="greenG" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#00FF87" />
-      <stop offset="100%" stop-color="#00D06C" />
+      <stop offset="100%" stop-color="#00C853" />
     </linearGradient>
   </defs>
 
-  <!-- 1. Background Squircle Canvas -->
-  <rect width="512" height="512" rx="116" fill="url(#bgGrad)" />
-  <rect x="18" y="18" width="476" height="476" rx="98" fill="none" stroke="#252E3F" stroke-width="12" />
+  <!-- 1. Dark Squircle Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgG)" />
+  <rect x="16" y="16" width="480" height="480" rx="98" fill="none" stroke="#242D3E" stroke-width="10" />
 
-  <!-- 2. Centered & Elongated Price Tag -->
-  <!-- Group rotated and perfectly centered at (256, 256) -->
-  <g transform="rotate(-35, 256, 256)">
-    <!-- Elongated Tag Body: Pointed left, long rectangular body extending right -->
-    <path 
-      d="M 106 256 
-         L 186 166 
-         A 24 24 0 0 1 204 158 
-         L 418 158 
-         A 22 22 0 0 1 440 180 
-         L 440 332 
-         A 22 22 0 0 1 418 354 
-         L 204 354 
-         A 24 24 0 0 1 186 346 
-         Z" 
-      fill="url(#tagGrad)" 
-      stroke="#FFFFFF" 
-      stroke-width="16" 
-      stroke-linejoin="round"
-    />
+  <!-- 2. Price Tag (Classic horizontal tag, pointed tip on LEFT) -->
+  <path
+    d="M 72 256
+       L 156 162
+       A 16 16 0 0 1 170 156
+       L 424 156
+       A 20 20 0 0 1 444 176
+       L 444 336
+       A 20 20 0 0 1 424 356
+       L 170 356
+       A 16 16 0 0 1 156 350
+       Z"
+    fill="url(#tagG)"
+    stroke="#FFFFFF"
+    stroke-width="14"
+    stroke-linejoin="round"
+  />
 
-    <!-- Tag Eyelet (Hole for String) on the Left Pointed End -->
-    <circle cx="172" cy="256" r="22" fill="#080A0E" stroke="#FFFFFF" stroke-width="10" />
+  <!-- Tag Eyelet (Hole near pointed tip) -->
+  <circle cx="162" cy="256" r="22" fill="#080A0E" stroke="#FFFFFF" stroke-width="10" />
 
-    <!-- 3. Bold Centered Price Drop Arrow (With Generous Breathing Room) -->
-    <!-- Diagonal downward arrow inside the long body -->
-    <path 
-      d="M 268 206 L 358 296" 
-      stroke="#FFFFFF" 
-      stroke-width="28" 
-      stroke-linecap="round" 
-    />
-    <polyline 
-      points="278,296 358,296 358,216" 
-      fill="none" 
-      stroke="#FFFFFF" 
-      stroke-width="28" 
-      stroke-linecap="round" 
-      stroke-linejoin="round" 
-    />
-  </g>
+  <!-- 3. GREEN Downward Trend Arrow (Price Drop) -->
+  <!-- Zigzag trend line clearly going DOWN like a stock chart -->
+  <polyline
+    points="240,200 286,256 326,216 396,310"
+    fill="none"
+    stroke="url(#greenG)"
+    stroke-width="24"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Arrowhead pointing clearly DOWN-RIGHT -->
+  <polygon
+    points="396,310 396,268 362,310"
+    fill="url(#greenG)"
+  />
 
-  <!-- 4. Corner Live Status Dot -->
-  <circle cx="434" cy="78" r="14" fill="url(#neonGreen)" stroke="#FFFFFF" stroke-width="4" />
+  <!-- 4. Green Live Status Dot (top-right corner) -->
+  <circle cx="440" cy="72" r="14" fill="url(#greenG)" stroke="#FFFFFF" stroke-width="4" />
 </svg>
