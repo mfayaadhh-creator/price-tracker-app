@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181B22" />
+      <stop offset="100%" stop-color="#0E1015" />
+    </linearGradient>
+
+    <!-- Warm Orange Tag Gradient -->
+    <linearGradient id="tagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5722" />
+      <stop offset="100%" stop-color="#E64A19" />
+    </linearGradient>
+
+    <!-- Emerald Accent Gradient -->
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E676" />
+      <stop offset="100%" stop-color="#00C853" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Clean Rounded Square Canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#2B303C" stroke-width="8" />
+
+  <!-- 2. Centered Professional Price Tag (Rotated -35deg for dynamic angle) -->
+  <g transform="rotate(-35, 256, 256)">
+    <!-- Elongated Tag Body -->
+    <path 
+      d="M 112 256 
+         L 188 170 
+         A 20 20 0 0 1 204 164 
+         L 416 164 
+         A 20 20 0 0 1 436 184 
+         L 436 328 
+         A 20 20 0 0 1 416 348 
+         L 204 348 
+         A 20 20 0 0 1 188 342 
+         Z" 
+      fill="url(#tagGrad)" 
+      stroke="#FFFFFF" 
+      stroke-width="12" 
+      stroke-linejoin="round"
+    />
+
+    <!-- Tag String Eyelet Circle -->
+    <circle cx="170" cy="256" r="20" fill="#0E1015" stroke="#FFFFFF" stroke-width="8" />
+
+    <!-- Clean Downward Price Trend Line (Minimalist stock/price drop) -->
+    <polyline 
+      points="248,222 292,266 328,230 366,280" 
+      fill="none" 
+      stroke="#FFFFFF" 
+      stroke-width="22" 
+      stroke-linecap="round" 
+      stroke-linejoin="round" 
+    />
+    <polygon 
+      points="366,280 342,274 360,256" 
+      fill="#FFFFFF" 
+    />
+    <!-- Subtle Green Accent Dot at arrow point -->
+    <circle cx="366" cy="280" r="7" fill="url(#greenGrad)" />
+  </g>
+
+  <!-- 3. Top-Right Status Indicator Dot -->
+  <circle cx="436" cy="76" r="12" fill="url(#greenGrad)" stroke="#FFFFFF" stroke-width="3" />
+</svg>
