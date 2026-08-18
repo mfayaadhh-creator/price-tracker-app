@@ -13,10 +13,10 @@ Aplikasi pemantau harga dan pemburu diskon otomatis untuk berbagai platform toko
 ## 📖 Latar Belakang & Tujuan Proyek
 
 Proyek ini dikembangkan sebagai **sarana pembelajaran dan eksplorasi rekayasa perangkat lunak (software engineering)**, dengan fokus pada:
-1. **Eksplorasi Framework `go-chi/chi`**: Membangun RESTful API yang modular, terstruktur, dan idiomatik di Go menggunakan middleware standar (*logging, recovery, CORS, rate limiting, and routing group*).
+1. **Eksplorasi Framework `go-chi/chi`**: Membangun RESTful API yang modular, terstruktur, dan idiomatik di Go menggunakan middleware standar (*logging, recovery, CORS, timing attack defense, and routing group*).
 2. **Reverse Engineering & Scraping Multi-Platform**: Mempelajari cara kerja ekstraksi metadata web modern (*Next.js `__NEXT_DATA__` state, JSON-LD Schema.org, OpenGraph/Twitter Meta, serta penanganan tantangan bot Akamai Interstitial Solver*).
 3. **Concurrency & Real-Time Alerting**: Mengoptimalkan evaluasi harga ribuan produk secara paralel menggunakan *Goroutines & Worker Pools (`sync.WaitGroup`)* serta sistem antrean notifikasi Telegram.
-4. **Passwordless Authentication**: Merancang alur login modern yang aman dan praktis tanpa password menggunakan *Telegram Deep-Link Bot Auth*.
+4. **Passwordless Authentication & One-Click UX**: Merancang alur login modern yang aman dan praktis tanpa password menggunakan *Telegram Deep-Link Bot Auth* dan auto-registration.
 
 ---
 
@@ -28,13 +28,15 @@ Proyek ini dikembangkan sebagai **sarana pembelajaran dan eksplorasi rekayasa pe
   - **Toko Mandiri**: Toko berbasis platform *Shopify* dan *WooCommerce*.
 - 🛡️ **Anti-Bot & Akamai Interstitial Solver**: Memanfaatkan TLS Client Fingerprint impersonation (*Chrome 120 profile*) dan pemecah tantangan Proof-of-Work JavaScript internal.
 - ⚡ **In-Memory Scraping Cache (TTL 5 Menit)**: Mencegah pemanggilan berulang ke server toko untuk URL yang sama, menghemat bandwidth, dan mencegah pembatasan IP.
-- 🤖 **Telegram Passwordless Deep-Link Login**: Pengguna cukup menekan tombol *Start* di Telegram untuk login otomatis tanpa perlu mengetik atau menghafal Chat ID.
+- 🤖 **One-Click Telegram Flow & Passwordless Auth**: Pengguna cukup menempel link produk dan menekan tombol Telegram. Akun dan produk otomatis terhubung tanpa perlu mencari nomor Chat ID manual.
+- 🔔 **Instant Telegram Registration Alert**: Bot secara otomatis mengirimkan notifikasi konfirmasi pendaftaran produk langsung ke ponsel pengguna.
+- 🔒 **Isolasi Data Pengguna & Guest Mode**: Setiap pengguna memiliki ruang pemantauan privat yang aman dan terpisah.
 - 📡 **Dual-Mode Telegram Architecture**:
   - **Webhook Mode**: Diaktifkan di lingkungan produksi (Vercel Serverless / VPS dengan domain HTTPS).
   - **Long-Polling Mode**: Berjalan otomatis di lingkungan lokal pengembangan (*localhost*).
 - 🎯 **Target Budget Alerts**: Pengguna dapat mengatur batas budget tertentu. Bot akan memprioritaskan peringatan ketika harga menyentuh target.
-- 🧭 **Neo-Brutalist Technical UI**: Antarmuka responsif berbasis Svelte yang bebas dependensi CSS berat, dilengkapi sistem ikon vektor SVG kustom dan drag-and-drop reordering.
-- 🔒 **Cron Security Protection**: Endpoint evaluasi harga diamankan menggunakan token `CRON_SECRET`.
+- 📱 **Mobile Drawer Sidebar & Neo-Brutalist UI**: Antarmuka responsif berbasis Svelte yang bebas dependensi CSS berat, dilengkapi navigasi mobile drawer yang ramping, sistem ikon vektor SVG kustom, dan drag-and-drop reordering.
+- 🛡️ **Security & Anti-Timing Attack Defense**: Endpoint evaluasi harga diamankan dengan `CRON_SECRET` dan verifikasi *constant-time comparison* (`crypto/subtle`).
 
 ---
 
@@ -118,7 +120,7 @@ npm run dev
 Aplikasi dilengkapi unit test live untuk memverifikasi fungsionalitas scraper multi-platform:
 
 ```bash
-go test -v ./internal/scraper/...
+go test -v ./pkg/scraper/...
 ```
 
 ---
